@@ -103,19 +103,19 @@
 		output wire  m00_axi_rready
 	);
 
+    parameter MEMORY_TEST_COUNT = 13'd4096;
 
+    wire m00_axi_init_axi_txn;
+    wire [31:0] m_address;
+    wire [31:0] m_data;
+    wire [7:0]  m_burst_length;
+    wire [1:0]  m_pg_mode;
+    wire [1:0]  m_pg_seed;
+    
+    wire m00_axi_txn_done;
+    wire m00_axi_error; 
 
-
-	
-	   wire m00_axi_init_axi_txn;
-	   wire [31:0] m_address;
-	   wire [31:0] m_data;
-	   wire [7:0]  m_burst_length;
-	   
-       wire m00_axi_txn_done;
-       wire m00_axi_error; 
-
-// Instantiation of Axi Bus Interface S00_AXI
+    // Instantiation of Axi Bus Interface S00_AXI
 	AXI4_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
@@ -124,6 +124,8 @@
 	    .m_address(m_address),
 	    .m_data(m_data),
 	    .m_burst_length(m_burst_length),
+        .m_pg_mode(m_pg_mode),
+        .m_pg_seed(m_pg_seed),
         .txn_done(m00_axi_txn_done),
         .txn_error(m00_axi_error),
 		.S_AXI_ACLK(s00_axi_aclk),
@@ -148,6 +150,103 @@
 		.S_AXI_RVALID(s00_axi_rvalid),
 		.S_AXI_RREADY(s00_axi_rready)
 	);
+
+    reg pg_rst;
+    reg pg_stall;
+    wire [31:0] pattern_out;
+
+    PATTERN_GEN PATTERN_GEN_inst (
+        .clk(m00_axi_aclk),
+        .rst(pg_rst),
+        .stall(pg_stall),
+        .pattern_sel(m_pg_mode),
+        .seed(m_pg_seed),
+        .pattern_out(pattern_out)
+    );
+
+    reg fifo_out_write_en;
+    wire fifo_out_full;
+    wire fifo_out_empty;
+
+    FIFO FIFO_write_inst (
+        .clk(m00_axi_aclk),
+        .rst(m00_axi_init_axi_txn),
+        .write_en(fifo_out_write_en),
+        .write_data(pattern_out),
+        .read(1'b0), // TODO
+        .read_data(32'h00000000), // TODO
+        .fifo_full(fifo_out_full), // TODO
+        .fifo_empty(fifo_out_empty) // TODO
+    );
+
+    parameter [1:0] STATE_IDLE = 2'b00;
+    parameter [1:0] STATE_WRITE = 2'b01;
+    parameter [1:0] STATE_READ_COMPARE = 2'b10;
+    parameter [1:0] STATE_UNUSED = 2'b11;
+    reg [1:0] tester_state;
+    reg [12:0] write_byte_counter;
+
+    always @(posedge m00_axi_aclk) begin
+        if (m00_axi_aresetn) begin
+            tester_state <= STATE_IDLE;
+            pg_rst <= 1'b1;
+            pg_stall <= 1'b1;
+        end else begin
+            case (tester_state)
+                STATE_IDLE: begin
+                    // waits until m00_axi_init_axi_txn bit is set
+                    pg_rst <= 1'b1;
+                    if (m00_axi_init_axi_txn) begin
+                        tester_state <= STATE_WRITE;
+                    end
+                    else begin
+                        tester_state <= STATE_IDLE;
+                    end
+                end
+                STATE_WRITE: begin
+                    if (write_byte_counter == MEMORY_TEST_COUNT) begin
+                        // sent 4096 bytes already, now read and compare
+                        pg_rst <= 1'b1;
+                        tester_state <= STATE_READ;
+                    end
+                    else begin
+                        // clearing reset here -> first entry will be the seed
+                        pg_rst <= 1'b0;
+                        pg_stall <= 1'b0;
+                        tester_state <= STATE_WRITE;
+
+                        // feed FIFO with pattern
+                        if (~fifo_out_full) begin
+                            fifo_out_write_en <= 1'b1;
+                            pg_stall <= 1'b0;
+                            write_byte_counter <= write_byte_counter + 1'b1;
+                        end
+                        else begin
+                            // FIFO is full, pause pattern generation
+                            fifo_out_write_en <= 1'b0;
+                            pg_stall <= 1'b1;
+                            write_byte_counter <= write_byte_counter;
+                        end
+                    end
+                end
+                STATE_READ_COMPARE: begin
+                    // TODO
+                    if (compare done) begin
+                        tester_state <= STATE_IDLE;
+                        pg_rst <= 1'b1;
+                    end
+                    else begin
+                        tester_state <= STATE_READ_COMPARE;
+                        pg_rst <= 1'b0;
+                    end
+
+                end
+                default: tester_state <= STATE_IDLE;
+            endcase
+        end
+    end
+
+    // TODO make adapter for FIFO to AXI4_BURST_MASTER_v1_0_M00_AXI_inst
 
 // Instantiation of Axi Bus Interface M00_AXI
 	AXI4_BURST_MASTER_v1_0_M00_AXI # ( 

@@ -19,6 +19,8 @@
 		output    wire init_txn,
         input     wire txn_done,
         input     wire txn_error,
+        output wire [1:0] pg_mode,
+        output wire [31:0] pg_seed,
 		
 		output wire [31:0] m_address,
 		output wire [31:0] m_data,
@@ -249,11 +251,11 @@
 	      slv_reg0 <= 0;               // Tester start reg
 	      slv_reg1 <= 0;               // Test status reg
 	      slv_reg2 <= 0;               // Not used
-	      slv_reg3 <= 32'hfffc0000;    // Preset to point to OCM (not functional)
+	      slv_reg3 <= 32'hfffc0000;    // Test Address
 	      slv_reg4 <= 32'hdeadfeed;    // Canary
-	      slv_reg5 <= 0;               // Not used 
-	      slv_reg6 <= 0;               // Not used
-	      slv_reg7 <= 0;               // Not used
+	      slv_reg5 <= 0;               // Not used
+	      slv_reg6 <= 0;               // Pattern Gen Mode [1:0]
+	      slv_reg7 <= 0;               // Pattern Gen Seed
 	    end 
 	  else begin
 	    if (slv_reg_wren)
@@ -468,6 +470,8 @@
     assign m_address        = slv_reg3[31:0];
     assign m_data           = slv_reg4[31:0];
     assign m_burst_length   = slv_reg5[7:0];
+    assign m_pg_mode        = slv_reg6[1:0];
+    assign m_pg_seed        = slv_reg7[31:0];
     
     
 	// User logic ends
