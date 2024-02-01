@@ -7,15 +7,14 @@
 
 		// User parameters ends
 		// Do not modify the parameters beyond this line
- 
+
 
 		// Parameters of Axi Slave Bus Interface S00_AXI
 		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 5,
 
 		// Parameters of Axi Master Bus Interface M00_AXI
-		parameter  C_M00_AXI_TARGET_SLAVE_BASE_ADDR	= 40'hFFFC0000,
-		parameter integer C_M00_AXI_BURST_LEN	    = 16,
+		parameter integer C_M00_AXI_BURST_LEN	    = 8,
 		parameter integer C_M00_AXI_ID_WIDTH	    = 1,
 		parameter integer C_M00_AXI_ADDR_WIDTH	    = 40,
 		parameter integer C_M00_AXI_DATA_WIDTH	    = 32,
@@ -55,8 +54,8 @@
 		output    wire                              s00_axi_rvalid,
 		input     wire                              s00_axi_rready,
 
-		
-		
+
+
 		input     wire                                m00_axi_aclk,
 		input     wire  m00_axi_aresetn,
 		output    wire [C_M00_AXI_ID_WIDTH-1 : 0] m00_axi_awid,
@@ -108,22 +107,19 @@
     wire m00_axi_init_axi_txn;
     wire [31:0] m_address;
     wire [31:0] m_data;
-    wire [7:0]  m_burst_length;
     wire [1:0]  m_pg_mode;
     wire [1:0]  m_pg_seed;
-    
+
     wire m00_axi_txn_done;
-    wire m00_axi_error; 
+    wire m00_axi_error;
 
     // Instantiation of Axi Bus Interface S00_AXI
-	AXI4_BURST_MASTER_v1_0_S00_AXI # ( 
+	AXI4_BURST_MASTER_v1_0_S00_AXI # (
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) AXI4_BURST_MASTER_v1_0_S00_AXI_inst (
 	    .init_txn(m00_axi_init_axi_txn),
 	    .m_address(m_address),
-	    .m_data(m_data),
-	    .m_burst_length(m_burst_length),
         .m_pg_mode(m_pg_mode),
         .m_pg_seed(m_pg_seed),
         .txn_done(m00_axi_txn_done),
@@ -152,31 +148,31 @@
 	);
 
     reg pg_rst;
-    reg pg_stall;
     wire [31:0] pattern_out;
 
     PATTERN_GEN PATTERN_GEN_inst (
         .clk(m00_axi_aclk),
         .rst(pg_rst),
-        .stall(pg_stall),
+        .stall(fifo_out_full),
         .pattern_sel(m_pg_mode),
         .seed(m_pg_seed),
         .pattern_out(pattern_out)
     );
 
     reg fifo_out_write_en;
+    wire fifo_read_en;
     wire fifo_out_full;
     wire fifo_out_empty;
 
-    FIFO FIFO_write_inst (
+    FIFO #(depth=8) FIFO_write_inst (
         .clk(m00_axi_aclk),
-        .rst(m00_axi_init_axi_txn),
+        .rst(!m00_axi_aresetn),
         .write_en(fifo_out_write_en),
         .write_data(pattern_out),
-        .read(1'b0), // TODO
-        .read_data(32'h00000000), // TODO
-        .fifo_full(fifo_out_full), // TODO
-        .fifo_empty(fifo_out_empty) // TODO
+        .read(fifo_read_en),
+        .read_data(m_data),
+        .fifo_full(fifo_out_full),
+        .fifo_empty(fifo_out_empty)
     );
 
     parameter [1:0] STATE_IDLE = 2'b00;
@@ -187,10 +183,9 @@
     reg [12:0] write_byte_counter;
 
     always @(posedge m00_axi_aclk) begin
-        if (m00_axi_aresetn) begin
+        if (!m00_axi_aresetn) begin
             tester_state <= STATE_IDLE;
             pg_rst <= 1'b1;
-            pg_stall <= 1'b1;
         end else begin
             case (tester_state)
                 STATE_IDLE: begin
@@ -204,34 +199,33 @@
                     end
                 end
                 STATE_WRITE: begin
+                    // keep writing pattern gen data to FIFO until memory filled
+
                     if (write_byte_counter == MEMORY_TEST_COUNT) begin
                         // sent 4096 bytes already, now read and compare
                         pg_rst <= 1'b1;
-                        tester_state <= STATE_READ;
+                        tester_state <= STATE_READ_COMPARE;
                     end
                     else begin
                         // clearing reset here -> first entry will be the seed
                         pg_rst <= 1'b0;
-                        pg_stall <= 1'b0;
                         tester_state <= STATE_WRITE;
 
                         // feed FIFO with pattern
                         if (~fifo_out_full) begin
                             fifo_out_write_en <= 1'b1;
-                            pg_stall <= 1'b0;
                             write_byte_counter <= write_byte_counter + 1'b1;
                         end
                         else begin
                             // FIFO is full, pause pattern generation
                             fifo_out_write_en <= 1'b0;
-                            pg_stall <= 1'b1;
                             write_byte_counter <= write_byte_counter;
                         end
                     end
                 end
                 STATE_READ_COMPARE: begin
                     // TODO
-                    if (compare done) begin
+                    if (TODO_COMPARE_DONE) begin
                         tester_state <= STATE_IDLE;
                         pg_rst <= 1'b1;
                     end
@@ -249,8 +243,7 @@
     // TODO make adapter for FIFO to AXI4_BURST_MASTER_v1_0_M00_AXI_inst
 
 // Instantiation of Axi Bus Interface M00_AXI
-	AXI4_BURST_MASTER_v1_0_M00_AXI # ( 
-		.C_M_TARGET_SLAVE_BASE_ADDR(C_M00_AXI_TARGET_SLAVE_BASE_ADDR),
+	AXI4_BURST_MASTER_v1_0_M00_AXI # (
 		.C_M_AXI_BURST_LEN(C_M00_AXI_BURST_LEN),
 		.C_M_AXI_ID_WIDTH(C_M00_AXI_ID_WIDTH),
 		.C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
@@ -266,7 +259,7 @@
 		.ERROR(m00_axi_error),
         .m_address(m_address),
 	    .m_data(m_data),
-	    .m_burst_length(m_burst_length),
+        .pg_fifo_read_en(fifo_read_en),
 		.M_AXI_ACLK(m00_axi_aclk),
 		.M_AXI_ARESETN(m00_axi_aresetn),
 		.M_AXI_AWID(m00_axi_awid),
@@ -314,7 +307,7 @@
 	);
 
 	// Add user logic here
-   
+
 	// User logic ends
 
 	endmodule

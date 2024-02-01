@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module FIFO #(parameter depth=16)
+module FIFO #(parameter depth=8)
 (
     input clk,
     input rst,
