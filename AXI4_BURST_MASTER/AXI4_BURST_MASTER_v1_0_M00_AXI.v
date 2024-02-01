@@ -32,7 +32,7 @@
         // alljiang
         input wire [31:0] m_address,        // This is the address to burst to (either BRAM or OCM)
         input wire [31:0] m_data,           // Data output of pattern generator FIFO
-        output reg wire pg_fifo_read_en,        // Read enable for pattern generator FIFO
+        output reg pg_fifo_read_en,        // Read enable for pattern generator FIFO
 
 		// User ports ends
 
@@ -529,14 +529,20 @@
     always @(posedge M_AXI_ACLK)
     begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
+        begin
             axi_wdata <= 'b1;
             pg_fifo_read_en <= 1'b0;
+        end
         else if (wnext)
+        begin
             axi_wdata <= m_data;
             pg_fifo_read_en <= 1'b1;
+        end
         else
+        begin
             axi_wdata <= m_data;
             pg_fifo_read_en <= 1'b0;
+        end
     end
 
 
