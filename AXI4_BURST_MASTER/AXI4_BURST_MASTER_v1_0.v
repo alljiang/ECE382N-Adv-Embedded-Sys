@@ -102,7 +102,7 @@
 		output wire  m00_axi_rready
 	);
 
-    parameter MEMORY_TEST_COUNT = 13'd4096;
+    localparam [12:0] MEMORY_TEST_COUNT = 13'd4096;
 
     wire m00_axi_init_axi_txn;
     wire [31:0] m_address;
@@ -110,8 +110,11 @@
     wire [1:0]  m_pg_mode;
     wire [1:0]  m_pg_seed;
 
+    // alljiang
     // wire m00_axi_txn_done;
-    reg tester_done; // alljiang
+    reg tester_done; 
+    reg compare_mismatch_found;
+
     wire m00_axi_error;
 
     // Instantiation of Axi Bus Interface S00_AXI
@@ -161,18 +164,6 @@
         .pattern_out(pattern_out)
     );
 
-    reg pg_compare_rst;
-    wire [31:0] pattern_compare_out;
-
-    PATTERN_GEN PATTERN_GEN_compare_inst (
-        .clk(m00_axi_aclk),
-        .rst(pg_compare_rst),
-        .stall(fifo_in_empty), // TODO or not comparing
-        .pattern_sel(m_pg_mode),
-        .seed(m_pg_seed),
-        .pattern_out(pattern_compare_out)
-    );
-
     reg fifo_out_write_en;
     wire fifo_read_en;
     wire fifo_out_full;
@@ -209,40 +200,52 @@
         .fifo_empty(fifo_in_empty)
     );
 
-    parameter STATE_IDLE = 2'b00;
-    parameter STATE_WRITE_ACTIVE = 2'b01;
-    parameter STATE_AWAIT_COMPARE = 2'b10;
+    reg pg_compare_rst;
+    wire [31:0] pattern_compare_out;
+
+    PATTERN_GEN PATTERN_GEN_compare_inst (
+        .clk(m00_axi_aclk),
+        .rst(pg_compare_rst),
+        .stall(fifo_in_empty),
+        .pattern_sel(m_pg_mode),
+        .seed(m_pg_seed),
+        .pattern_out(pattern_compare_out)
+    );
+
+    localparam [1:0] STATE_IDLE = 2'b00;
+    localparam [1:0] STATE_WRITE_ACTIVE = 2'b01;
+    localparam [1:0] STATE_AWAIT_COMPARE = 2'b10;
     reg tester_state;
     reg [12:0] write_byte_counter;
 
     always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn) begin
-            writer_state <= STATE_IDLE;
+            tester_state <= STATE_IDLE;
             write_byte_counter <= 13'd0;
             pg_rst <= 1'b1;
         end 
         else begin
-            case (writer_state)
+            case (tester_state)
                 STATE_IDLE: begin
                     // waits until m00_axi_init_axi_txn bit is set
                     pg_rst <= 1'b1;
                     if (m00_axi_init_axi_txn)
-                        writer_state <= STATE_WRITE;
+                        tester_state <= STATE_WRITE;
                     tester_done <= 1'b0;
                     else
-                        writer_state <= STATE_IDLE;
+                        tester_state <= STATE_IDLE;
                 end
-                STATE_WRITE: begin
+                STATE_WRITE_ACTIVE: begin
                     // keep writing pattern gen data to FIFO until memory filled
 
                     if (write_byte_counter == MEMORY_TEST_COUNT) begin
                         // sent 4096 bytes already
-                        writer_state <= STATE_AWAIT_COMPARE;
+                        tester_state <= STATE_AWAIT_COMPARE;
                     end
                     else begin
                         // clearing reset here -> first entry will be the seed
                         pg_rst <= 1'b0;
-                        writer_state <= STATE_WRITE;
+                        tester_state <= STATE_WRITE;
 
                         // feed FIFO with pattern
                         if (~fifo_out_full) begin
@@ -258,24 +261,23 @@
                 end
                 STATE_AWAIT_COMPARE: begin
                     // wait for read_done signal
-                    if (read_done && fifo_in_empty)
-                        writer_state <= STATE_IDLE;
-
+                    if (read_done && fifo_in_empty) begin
+                        tester_state <= STATE_IDLE;
                         tester_done <= 1'b1;
-                    else
-                        writer_state <= STATE_AWAIT_COMPARE;
+                    end
+                    else begin
+                        tester_state <= STATE_AWAIT_COMPARE;
+                    end
                 end
-                default: writer_state <= STATE_IDLE;
+                default: tester_state <= STATE_IDLE;
             endcase
         end
     end
 
     reg [12:0] read_byte_counter;
-    reg compare_mismatch_found;
 
     always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn) begin
-            reader_state <= STATE_IDLE;
             read_byte_counter <= 13'd0;
             pg_compare_rst <= 1'b1;
             compare_mismatch_found <= 1'b0;
