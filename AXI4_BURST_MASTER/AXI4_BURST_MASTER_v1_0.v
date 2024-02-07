@@ -228,6 +228,7 @@
                     pg_rst <= 1'b1;
                     if (m00_axi_init_axi_txn)
                         writer_state <= STATE_WRITE;
+                    tester_done <= 1'b0;
                     else
                         writer_state <= STATE_IDLE;
                 end
@@ -260,7 +261,7 @@
                     if (read_done && fifo_in_empty)
                         writer_state <= STATE_IDLE;
 
-                        
+                        tester_done <= 1'b1;
                     else
                         writer_state <= STATE_AWAIT_COMPARE;
                 end
