@@ -152,6 +152,22 @@
 		.S_AXI_RREADY(s00_axi_rready)
 	);
 
+    reg fifo_out_write_en;
+    wire fifo_read_en;
+    wire fifo_out_full;
+    wire fifo_out_empty;
+
+    FIFO #(.depth(8)) FIFO_write_inst (
+        .clk(m00_axi_aclk),
+        .rst(!m00_axi_aresetn),
+        .write_en(fifo_out_write_en),
+        .write_data(pattern_out),
+        .read(fifo_read_en),
+        .read_data(m_data),
+        .fifo_full(fifo_out_full),
+        .fifo_empty(fifo_out_empty)
+    );
+
     reg pg_rst;
     wire [31:0] pattern_out;
 
@@ -164,22 +180,6 @@
         .pattern_out(pattern_out)
     );
 
-    reg fifo_out_write_en;
-    wire fifo_read_en;
-    wire fifo_out_full;
-    wire fifo_out_empty;
-
-    FIFO #(depth=8) FIFO_write_inst (
-        .clk(m00_axi_aclk),
-        .rst(!m00_axi_aresetn),
-        .write_en(fifo_out_write_en),
-        .write_data(pattern_out),
-        .read(fifo_read_en),
-        .read_data(m_data),
-        .fifo_full(fifo_out_full),
-        .fifo_empty(fifo_out_empty)
-    );
-
     wire fifo_in_write_en;
     reg fifo_in_read_en;
     wire fifo_in_full;
@@ -189,7 +189,7 @@
 
     wire read_done;
 
-    FIFO #(depth=8) FIFO_read_inst (
+    FIFO #(.depth(8)) FIFO_read_inst (
         .clk(m00_axi_aclk),
         .rst(!m00_axi_aresetn),
         .write_en(fifo_in_write_en),
@@ -229,11 +229,13 @@
                 STATE_IDLE: begin
                     // waits until m00_axi_init_axi_txn bit is set
                     pg_rst <= 1'b1;
-                    if (m00_axi_init_axi_txn)
-                        tester_state <= STATE_WRITE;
-                    tester_done <= 1'b0;
-                    else
+                    if (m00_axi_init_axi_txn) begin
+                        tester_state <= STATE_WRITE_ACTIVE;
+                        tester_done <= 1'b0;
+                    end
+                    else begin
                         tester_state <= STATE_IDLE;
+                    end
                 end
                 STATE_WRITE_ACTIVE: begin
                     // keep writing pattern gen data to FIFO until memory filled
@@ -245,7 +247,7 @@
                     else begin
                         // clearing reset here -> first entry will be the seed
                         pg_rst <= 1'b0;
-                        tester_state <= STATE_WRITE;
+                        tester_state <= STATE_WRITE_ACTIVE;
 
                         // feed FIFO with pattern
                         if (~fifo_out_full) begin
