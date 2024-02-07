@@ -34,6 +34,12 @@
         input wire [31:0] m_data,           // Data output of pattern generator FIFO
         output reg pg_fifo_read_en,        // Read enable for pattern generator FIFO
 
+        output reg fifo_in_write_en,
+        output wire [31:0] fifo_in_write_data,
+        input wire fifo_in_full,
+
+        output wire read_done,
+
 		// User ports ends
 
 
@@ -43,7 +49,7 @@
 		input wire     INIT_AXI_TXN,        // Start memory test
 
 		// Asserts when transaction is complete
-		output wire    TXN_DONE,
+		// output wire    TXN_DONE,
 
 		// Asserts when ERROR is detected
 		output reg      ERROR,
@@ -96,7 +102,7 @@
 		// Master Interface Write Data.
 		output wire [C_M_AXI_DATA_WIDTH-1 : 0] M_AXI_WDATA,
 		// Write strobes. This signal indicates which byte
-    // lanes hold valid data. There is one write strobe
+    // lanes hold valid data. There is one write strobeARBURST
     // bit for each eight bits of the write data bus.
 		output wire [C_M_AXI_DATA_WIDTH/8-1 : 0] M_AXI_WSTRB,
 		// Write last. This signal indicates the last transfer in a write burst.
@@ -255,9 +261,6 @@
 	reg  	                        burst_write_active;
 	reg  	                        burst_read_active;
 
-	reg [C_M_AXI_DATA_WIDTH-1 : 0] 	expected_rdata;
-
-
 	//Interface response error flags
 	wire  	write_resp_error;
 	wire  	read_resp_error;
@@ -336,10 +339,14 @@
 	assign M_AXI_RREADY			= axi_rready;
 
 	// Example design I/O
-	assign TXN_DONE				= compare_done;
+	// assign TXN_DONE				= compare_done;
 
 	//  Burst size in bytes
 	assign burst_size_bytes	    = C_M_AXI_BURST_LEN * C_M_AXI_DATA_WIDTH/8;
+
+    // alljiang
+    assign fifo_in_write_data = M_AXI_RDATA;
+    assign read_done = reads_done;
 
 
     // --------------------------------------------------------------------------------------------------
@@ -665,8 +672,6 @@
 	      read_index <= read_index;
 	  end
 
-
-
 	//  The Read Data channel returns the results of the read request
 
 	//  In this example the data checker is always able to accept
@@ -682,7 +687,8 @@
 	    // accept/acknowledge rdata/rresp with axi_rready by the master
 	    // when M_AXI_RVALID is asserted by slave
 
-	    else if (M_AXI_RVALID)
+        // alljiang
+	    else if (M_AXI_RVALID && ~fifo_in_full)
 	      begin
 	         if (M_AXI_RLAST && axi_rready)
 	          begin
@@ -696,25 +702,6 @@
 	    // retain the previous value
 	  end
 
-	//Check received read data against data generator
-
-	  always @(posedge M_AXI_ACLK)
-	  begin
-	    if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
-	      begin
-	        read_mismatch <= 1'b0;
-	      end
-
-	    //Only check data when RVALID is active
-
-	    else if (rnext && (M_AXI_RDATA != expected_rdata))
-	      begin
-	        read_mismatch <= 1'b1;
-	      end
-	    else
-	      read_mismatch <= 1'b0;
-	  end
-
 	//   Flag any read response errors
 
 	  assign read_resp_error = axi_rready & M_AXI_RVALID & M_AXI_RRESP[1];
@@ -724,17 +711,17 @@
 	// ---------------   Example design read check data generator  -------------------------------------------
 	//--------------------------------------------------------------------------------------------------------
 
-	//Generate expected read data to check against actual read data
-
-	  always @(posedge M_AXI_ACLK)
-	  begin
-		if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)   // || M_AXI_RLAST)
-			expected_rdata <= 'b1;
-		else if (M_AXI_RVALID && axi_rready)
-			expected_rdata <= expected_rdata + 1;
-		else
-			expected_rdata <= expected_rdata;
-	  end
+    // alljiang
+    // write to fifo 
+    always @(posedge M_AXI_ACLK)
+    begin
+        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
+            fifo_in_write_en <= 1'b0;
+        else if (M_AXI_RVALID && axi_rready)
+            fifo_in_write_en <= 1'b1;
+        else
+            fifo_in_write_en <= 1'b0;
+    end
 
 
 	//------------------------------------------------------------------------------------------------------
@@ -792,13 +779,11 @@
 	        write_burst_counter <= 'b0;
 	      end
 	    else if (M_AXI_AWREADY && axi_awvalid)
-	      begin
-	        if (write_burst_counter[C_NO_BURSTS_REQ] == 1'b0)
-	          begin
-	            write_burst_counter <= write_burst_counter + 1'b1;
-	            //write_burst_counter[C_NO_BURSTS_REQ] <= 1'b1;
-	          end
-	      end
+        begin
+            // alljiang
+            write_burst_counter <= write_burst_counter + 1'b1;
+            //write_burst_counter[C_NO_BURSTS_REQ] <= 1'b1;
+        end
 	    else
 	      write_burst_counter <= write_burst_counter;
 	  end
@@ -836,7 +821,6 @@
 	        mst_exec_state      <= IDLE;
 	        start_single_burst_write <= 1'b0;
 	        start_single_burst_read  <= 1'b0;
-	        compare_done      <= 1'b0;
 	        ERROR <= 1'b0;
 	      end
 	    else
@@ -889,7 +873,7 @@
 	            // read controller
 	            if (reads_done)
 	              begin
-	                mst_exec_state <= INIT_COMPARE;
+	                mst_exec_state <= IDLE;
 	              end
 	            else
 	              begin
@@ -904,17 +888,6 @@
 	                   start_single_burst_read <= 1'b0; //Negate to generate a pulse
 	                 end
 	              end
-
-	          INIT_COMPARE:
-	            // This state is responsible to issue the state of comparison
-	            // of written data with the read data. If no error flags are set,
-	            // compare_done signal will be asseted to indicate success.
-	            //if (~error_reg)
-	            begin
-	              ERROR <= error_reg;
-	              mst_exec_state <= IDLE;
-	              compare_done <= 1'b1;
-	            end
 	          default :
 	            begin
 	              mst_exec_state  <= IDLE;

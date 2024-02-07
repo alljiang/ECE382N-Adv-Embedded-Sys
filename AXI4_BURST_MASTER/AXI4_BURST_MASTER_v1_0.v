@@ -110,7 +110,8 @@
     wire [1:0]  m_pg_mode;
     wire [1:0]  m_pg_seed;
 
-    wire m00_axi_txn_done;
+    // wire m00_axi_txn_done;
+    reg tester_done; // alljiang
     wire m00_axi_error;
 
     // Instantiation of Axi Bus Interface S00_AXI
@@ -122,7 +123,8 @@
 	    .m_address(m_address),
         .m_pg_mode(m_pg_mode),
         .m_pg_seed(m_pg_seed),
-        .txn_done(m00_axi_txn_done),
+        .compare_mismatch_found(compare_mismatch_found),
+        .txn_done(tester_done),
         .txn_error(m00_axi_error),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -159,6 +161,18 @@
         .pattern_out(pattern_out)
     );
 
+    reg pg_compare_rst;
+    wire [31:0] pattern_compare_out;
+
+    PATTERN_GEN PATTERN_GEN_compare_inst (
+        .clk(m00_axi_aclk),
+        .rst(pg_compare_rst),
+        .stall(fifo_in_empty), // TODO or not comparing
+        .pattern_sel(m_pg_mode),
+        .seed(m_pg_seed),
+        .pattern_out(pattern_compare_out)
+    );
+
     reg fifo_out_write_en;
     wire fifo_read_en;
     wire fifo_out_full;
@@ -175,41 +189,59 @@
         .fifo_empty(fifo_out_empty)
     );
 
-    parameter [1:0] STATE_IDLE = 2'b00;
-    parameter [1:0] STATE_WRITE = 2'b01;
-    parameter [1:0] STATE_READ_COMPARE = 2'b10;
-    parameter [1:0] STATE_UNUSED = 2'b11;
-    reg [1:0] tester_state;
+    wire fifo_in_write_en;
+    reg fifo_in_read_en;
+    wire fifo_in_full;
+    wire fifo_in_empty;
+    wire [31:0] fifo_in_read_data;
+    wire [31:0] fifo_in_write_data;
+
+    wire read_done;
+
+    FIFO #(depth=8) FIFO_read_inst (
+        .clk(m00_axi_aclk),
+        .rst(!m00_axi_aresetn),
+        .write_en(fifo_in_write_en),
+        .write_data(fifo_in_write_data),
+        .read(fifo_in_read_en),
+        .read_data(fifo_in_read_data),
+        .fifo_full(fifo_in_full),
+        .fifo_empty(fifo_in_empty)
+    );
+
+    parameter STATE_IDLE = 2'b00;
+    parameter STATE_WRITE_ACTIVE = 2'b01;
+    parameter STATE_AWAIT_COMPARE = 2'b10;
+    reg tester_state;
     reg [12:0] write_byte_counter;
 
     always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn) begin
-            tester_state <= STATE_IDLE;
+            writer_state <= STATE_IDLE;
+            write_byte_counter <= 13'd0;
             pg_rst <= 1'b1;
-        end else begin
-            case (tester_state)
+        end 
+        else begin
+            case (writer_state)
                 STATE_IDLE: begin
                     // waits until m00_axi_init_axi_txn bit is set
                     pg_rst <= 1'b1;
-                    if (m00_axi_init_axi_txn) begin
-                        tester_state <= STATE_WRITE;
-                    end
-                    else begin
-                        tester_state <= STATE_IDLE;
-                    end
+                    if (m00_axi_init_axi_txn)
+                        writer_state <= STATE_WRITE;
+                    else
+                        writer_state <= STATE_IDLE;
                 end
                 STATE_WRITE: begin
                     // keep writing pattern gen data to FIFO until memory filled
 
                     if (write_byte_counter == MEMORY_TEST_COUNT) begin
-                        // sent 4096 bytes already, now read and compare
-                        pg_rst <= 1'b1;
-                        tester_state <= STATE_READ_COMPARE;
+                        // sent 4096 bytes already
+                        writer_state <= STATE_AWAIT_COMPARE;
                     end
                     else begin
                         // clearing reset here -> first entry will be the seed
                         pg_rst <= 1'b0;
-                        tester_state <= STATE_WRITE;
+                        writer_state <= STATE_WRITE;
 
                         // feed FIFO with pattern
                         if (~fifo_out_full) begin
@@ -223,24 +255,44 @@
                         end
                     end
                 end
-                STATE_READ_COMPARE: begin
-                    // TODO
-                    if (TODO_COMPARE_DONE) begin
-                        tester_state <= STATE_IDLE;
-                        pg_rst <= 1'b1;
-                    end
-                    else begin
-                        tester_state <= STATE_READ_COMPARE;
-                        pg_rst <= 1'b0;
-                    end
+                STATE_AWAIT_COMPARE: begin
+                    // wait for read_done signal
+                    if (read_done && fifo_in_empty)
+                        writer_state <= STATE_IDLE;
 
+                        
+                    else
+                        writer_state <= STATE_AWAIT_COMPARE;
                 end
-                default: tester_state <= STATE_IDLE;
+                default: writer_state <= STATE_IDLE;
             endcase
         end
     end
 
-    // TODO make adapter for FIFO to AXI4_BURST_MASTER_v1_0_M00_AXI_inst
+    reg [12:0] read_byte_counter;
+    reg compare_mismatch_found;
+
+    always @(posedge m00_axi_aclk) begin
+        if (!m00_axi_aresetn) begin
+            reader_state <= STATE_IDLE;
+            read_byte_counter <= 13'd0;
+            pg_compare_rst <= 1'b1;
+            compare_mismatch_found <= 1'b0;
+        end
+        else begin
+            if (~fifo_in_empty) begin
+                fifo_in_read_en <= 1'b1;
+                read_byte_counter <= read_byte_counter + 1'b1;
+
+                if (fifo_in_read_data != pattern_compare_out)
+                    compare_mismatch_found <= 1'b1;
+            end
+            else begin
+                fifo_in_read_en <= 1'b0;
+                read_byte_counter <= read_byte_counter;
+            end
+        end
+    end
 
 // Instantiation of Axi Bus Interface M00_AXI
 	AXI4_BURST_MASTER_v1_0_M00_AXI # (
@@ -255,11 +307,17 @@
 		.C_M_AXI_BUSER_WIDTH(C_M00_AXI_BUSER_WIDTH)
 	) AXI4_BURST_MASTER_v1_0_M00_AXI_inst (
 		.INIT_AXI_TXN(m00_axi_init_axi_txn),
-		.TXN_DONE(m00_axi_txn_done),
+		// .TXN_DONE(m00_axi_txn_done),
 		.ERROR(m00_axi_error),
         .m_address(m_address),
 	    .m_data(m_data),
         .pg_fifo_read_en(fifo_read_en),
+
+        .fifo_in_write_en(fifo_in_write_en),
+        .fifo_in_write_data(fifo_in_write_data),
+        .fifo_in_full(fifo_in_full),
+        .read_done(read_done),
+
 		.M_AXI_ACLK(m00_axi_aclk),
 		.M_AXI_ARESETN(m00_axi_aresetn),
 		.M_AXI_AWID(m00_axi_awid),

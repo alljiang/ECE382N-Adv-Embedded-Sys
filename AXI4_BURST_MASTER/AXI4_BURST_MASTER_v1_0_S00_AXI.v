@@ -15,12 +15,15 @@
 	)
 	(
 		// Users to add ports here
+        // alljiang
+        // allenjiang from city 
 
 		output    wire init_txn,
         input     wire txn_done,
         input     wire txn_error,
         output wire [1:0] pg_mode,
         output wire [31:0] pg_seed,
+        input wire compare_mismatch_found,
 
 		output wire [31:0] m_address,
 
@@ -433,7 +436,7 @@
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	        3'h0   : reg_data_out <= slv_reg0;
-	        3'h1   : reg_data_out <= {{31{1'b0}},txn_done};
+	        3'h1   : reg_data_out <= {{30{1'b0}},compare_mismatch_found,txn_done};
 	        3'h2   : reg_data_out <= {{31{1'b0}},txn_error};
 	        3'h3   : reg_data_out <= slv_reg3;
 	        3'h4   : reg_data_out <= slv_reg4;
