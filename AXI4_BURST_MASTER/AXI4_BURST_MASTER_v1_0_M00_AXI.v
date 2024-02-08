@@ -199,12 +199,10 @@
 
 	// Burst length for transactions, in C_M_AXI_DATA_WIDTHs.
 	// Non-2^n lengths will eventually cause bursts across 4K address boundaries.
-	//  localparam integer C_MASTER_LENGTH	= 12;
+	 localparam integer C_MASTER_LENGTH	= 12;
 
 	// total number of burst transfers is master length divided by burst length and burst size
-	//  localparam integer C_NO_BURSTS_REQ = C_MASTER_LENGTH-clogb2((C_M_AXI_BURST_LEN*C_M_AXI_DATA_WIDTH/8)-1);
-    localparam integer C_NO_BURSTS_REQ = 9; // 2 ^ 9 = 512 // alljiang
-    localparam [9:0] TOTAL_BURST_COUNT = 512; // alljiang
+	 localparam integer C_NO_BURSTS_REQ = C_MASTER_LENGTH-clogb2((C_M_AXI_BURST_LEN*C_M_AXI_DATA_WIDTH/8)-1);
 
 	// Example State machine to initialize counter, initialize write transactions,
 	// initialize read transactions and comparison of read data with the
@@ -859,7 +857,7 @@
 
                     
 	                if (~axi_awvalid && ~start_single_burst_write && 
-                        ~burst_write_active && ~pg_fifo_full) begin
+                        ~burst_write_active && pg_fifo_full) begin
                         start_single_burst_write <= 1'b1;
                     end
 	                else begin
@@ -927,8 +925,7 @@
             writes_done <= 1'b0;
 
         //The writes_done should be associated with a bready response
-        //else if (M_AXI_BVALID && axi_bready && (write_burst_counter == {(C_NO_BURSTS_REQ-1){1}}) && axi_wlast)
-        else if (M_AXI_BVALID && (write_burst_counter == TOTAL_BURST_COUNT-1) && axi_bready)
+        else if (M_AXI_BVALID && axi_bready && (write_burst_counter == {(C_NO_BURSTS_REQ-1){1}}) && axi_wlast)
             writes_done <= 1'b1;
         else
             writes_done <= writes_done;

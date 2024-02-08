@@ -229,13 +229,14 @@
             case (tester_state)
                 STATE_IDLE: begin
                     // waits until m00_axi_init_axi_txn bit is set
-                    pg_rst <= 1'b1;
                     if (m00_axi_init_axi_txn) begin
                         tester_state <= STATE_WRITE_ACTIVE;
                         tester_done <= 1'b0;
+                        pg_rst <= 1'b0;
                     end
                     else begin
                         tester_state <= STATE_IDLE;
+                        pg_rst <= 1'b1;
                     end
                 end
                 STATE_WRITE_ACTIVE: begin
