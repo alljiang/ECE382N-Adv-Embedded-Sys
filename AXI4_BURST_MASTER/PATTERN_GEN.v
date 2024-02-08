@@ -59,7 +59,7 @@ module PATTERN_GEN(
             `PATTERN_SLIDING_ZERO: pattern_out = sliding_zero;
             `PATTERN_SLIDING_ONE: pattern_out = sliding_one;
             `PATTERN_LFSR: pattern_out = lfsr;
-            default: pattern_out = 0;
+            default: pattern_out = 32'hDEADBEEF;
         endcase
     end
     

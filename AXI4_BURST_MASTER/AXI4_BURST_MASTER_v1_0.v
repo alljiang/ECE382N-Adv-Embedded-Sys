@@ -318,6 +318,7 @@
         .m_address(m_address),
 	    .m_data(m_data),
         .pg_fifo_read_en(fifo_read_en),
+        .pg_fifo_full(fifo_out_full),
 
         .fifo_in_write_en(fifo_in_write_en),
         .fifo_in_write_data(fifo_in_write_data),

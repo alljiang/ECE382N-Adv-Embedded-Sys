@@ -32,7 +32,8 @@
         // alljiang
         input wire [31:0] m_address,        // This is the address to burst to (either BRAM or OCM)
         input wire [31:0] m_data,           // Data output of pattern generator FIFO
-        output reg pg_fifo_read_en,        // Read enable for pattern generator FIFO
+        output reg pg_fifo_read_en,         // Read enable for pattern generator FIFO
+        input wire pg_fifo_full,            // Indicates that there are 8 words in FIFO
 
         output reg fifo_in_write_en,
         output wire [31:0] fifo_in_write_data,
@@ -856,14 +857,14 @@
 	              begin
 	                mst_exec_state  <= INIT_WRITE;
 
-	                if (~axi_awvalid && ~start_single_burst_write && ~burst_write_active)
-	                  begin
-	                    start_single_burst_write <= 1'b1;
-	                  end
-	                else
-	                  begin
+                    
+	                if (~axi_awvalid && ~start_single_burst_write && 
+                        ~burst_write_active && ~pg_fifo_full) begin
+                        start_single_burst_write <= 1'b1;
+                    end
+	                else begin
 	                    start_single_burst_write <= 1'b0; //Negate to generate a pulse
-	                  end
+                    end
 	              end
 
 	          INIT_READ:
