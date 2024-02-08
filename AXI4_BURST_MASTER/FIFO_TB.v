@@ -18,7 +18,7 @@ wire [31:0] read_data;
 wire fifo_full;
 wire fifo_empty;
 
-FIFO #(4) fifo (
+MY_FIFO #(4) fifo (
     clk,
     rst,
     write_en,
@@ -63,17 +63,17 @@ initial begin
     `assert(fifo_full, 1'b1)
     
     read = 1;
-    #1;
     `assert(read_data, 32'h1)
+    #1;
     `assert(fifo_empty, 1'b0)
     `assert(fifo_full, 1'b0)
-    #1;
     `assert(read_data, 32'h2)
     #1;
     `assert(read_data, 32'h3)
     #1;
-    read = 0;
     `assert(read_data, 32'h4)
+    #1;
+    read = 0;
     `assert(fifo_empty, 1'b1)
     `assert(fifo_full, 1'b0)
     #10;
@@ -85,21 +85,21 @@ initial begin
     read = 1;
     write_data = 32'h2;
     `assert(fifo_empty, 1'b0)
+    `assert(read_data, 32'h1)
     #1;
     write_data = 32'h3;
-    `assert(read_data, 32'h1)
     `assert(fifo_empty, 1'b0)
-    #1;
-    write_data = 32'h4;
     `assert(read_data, 32'h2)
     #1;
-    write_data = 32'h5;
+    write_data = 32'h4;
     `assert(read_data, 32'h3)
     #1;
+    write_data = 32'h5;
     `assert(read_data, 32'h4)
-    write_en = 0;
     #1;
+    write_en = 0;
     `assert(read_data, 32'h5)
+    #1;
     `assert(fifo_empty, 1'b1)
     read = 0;
     

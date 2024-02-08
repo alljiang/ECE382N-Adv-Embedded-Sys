@@ -27,7 +27,7 @@ module MY_FIFO #(parameter depth=8)
     input write_en,
     input [31:0] write_data,
     input read,
-    output reg [31:0] read_data,
+    output [31:0] read_data,
     output fifo_full,
     output fifo_empty
 );
@@ -39,6 +39,7 @@ module MY_FIFO #(parameter depth=8)
     
     assign fifo_full = count == depth;
     assign fifo_empty = count == 0;
+    assign read_data[31:0] = memory[read_ptr];
     
     always @(posedge clk) begin
         if (rst) begin
@@ -61,7 +62,6 @@ module MY_FIFO #(parameter depth=8)
         else begin
             if (read & !fifo_empty) begin
                 read_ptr <= read_ptr + 1'b1;
-                read_data <= memory[read_ptr];
             end
         end
     
