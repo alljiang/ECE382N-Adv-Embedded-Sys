@@ -203,25 +203,25 @@
 	// total number of burst transfers is master length divided by burst length and burst size
 	//  localparam integer C_NO_BURSTS_REQ = C_MASTER_LENGTH-clogb2((C_M_AXI_BURST_LEN*C_M_AXI_DATA_WIDTH/8)-1);
     localparam integer C_NO_BURSTS_REQ = 9; // 2 ^ 9 = 512 // alljiang
-    parameter [9:0] TOTAL_BURST_COUNT = 512; // alljiang
+    localparam [9:0] TOTAL_BURST_COUNT = 512; // alljiang
 
 	// Example State machine to initialize counter, initialize write transactions,
 	// initialize read transactions and comparison of read data with the
 	// written data words.
 
-	parameter [1:0] IDLE = 2'b00; // This state initiates AXI4Lite transaction
+	localparam [1:0] IDLE = 2'b00; // This state initiates AXI4Lite transaction
 			// after the state machine changes state to INIT_WRITE
 			// when there is 0 to 1 transition on INIT_AXI_TXN
 
-	parameter [1:0] INIT_WRITE   = 2'b01; // This state initializes write transaction,
+	localparam [1:0] INIT_WRITE   = 2'b01; // This state initializes write transaction,
 			// once writes are done, the state machine
 			// changes state to INIT_READ
 
-	parameter [1:0] INIT_READ = 2'b10; // This state initializes read transaction
+	localparam [1:0] INIT_READ = 2'b10; // This state initializes read transaction
 			// once reads are done, the state machine
 			// changes state to INIT_COMPARE
 
-     parameter [1:0] INIT_COMPARE = 2'b11; // This state issues the status of comparison
+    localparam [1:0] INIT_COMPARE = 2'b11; // This state issues the status of comparison
 			// of the written data with the read data
 
 	reg [1:0] mst_exec_state;

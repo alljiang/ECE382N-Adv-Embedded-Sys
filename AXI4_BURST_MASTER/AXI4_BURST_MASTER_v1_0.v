@@ -14,6 +14,7 @@
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 5,
 
 		// Parameters of Axi Master Bus Interface M00_AXI
+		parameter integer C_M00_AXI_TARGET_SLAVE_BASE_ADDR = 40'hFFFC0000,
 		parameter integer C_M00_AXI_BURST_LEN	    = 8,
 		parameter integer C_M00_AXI_ID_WIDTH	    = 1,
 		parameter integer C_M00_AXI_ADDR_WIDTH	    = 40,
@@ -107,8 +108,8 @@
     wire m00_axi_init_axi_txn;
     wire [31:0] m_address;
     wire [31:0] m_data;
-    wire [1:0]  m_pg_mode;
-    wire [1:0]  m_pg_seed;
+    wire [1:0]  pg_mode;
+    wire [31:0]  pg_seed;
 
     // alljiang
     // wire m00_axi_txn_done;
@@ -124,8 +125,8 @@
 	) AXI4_BURST_MASTER_v1_0_S00_AXI_inst (
 	    .init_txn(m00_axi_init_axi_txn),
 	    .m_address(m_address),
-        .m_pg_mode(m_pg_mode),
-        .m_pg_seed(m_pg_seed),
+        .pg_mode(pg_mode),
+        .pg_seed(pg_seed),
         .compare_mismatch_found(compare_mismatch_found),
         .txn_done(tester_done),
         .txn_error(m00_axi_error),
@@ -156,8 +157,11 @@
     wire fifo_read_en;
     wire fifo_out_full;
     wire fifo_out_empty;
+    
+    wire [31:0] pattern_out;
+    reg pg_rst;
 
-    FIFO #(.depth(8)) FIFO_write_inst (
+    MY_FIFO #(.depth(8)) FIFO_write_inst (
         .clk(m00_axi_aclk),
         .rst(!m00_axi_aresetn),
         .write_en(fifo_out_write_en),
@@ -168,15 +172,12 @@
         .fifo_empty(fifo_out_empty)
     );
 
-    reg pg_rst;
-    wire [31:0] pattern_out;
-
     PATTERN_GEN PATTERN_GEN_inst (
         .clk(m00_axi_aclk),
         .rst(pg_rst),
         .stall(fifo_out_full),
-        .pattern_sel(m_pg_mode),
-        .seed(m_pg_seed),
+        .pattern_sel(pg_mode),
+        .seed(pg_seed),
         .pattern_out(pattern_out)
     );
 
@@ -189,7 +190,7 @@
 
     wire read_done;
 
-    FIFO #(.depth(8)) FIFO_read_inst (
+    MY_FIFO #(.depth(8)) FIFO_read_inst (
         .clk(m00_axi_aclk),
         .rst(!m00_axi_aresetn),
         .write_en(fifo_in_write_en),
@@ -207,8 +208,8 @@
         .clk(m00_axi_aclk),
         .rst(pg_compare_rst),
         .stall(fifo_in_empty),
-        .pattern_sel(m_pg_mode),
-        .seed(m_pg_seed),
+        .pattern_sel(pg_mode),
+        .seed(pg_seed),
         .pattern_out(pattern_compare_out)
     );
 

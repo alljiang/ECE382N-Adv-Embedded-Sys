@@ -149,6 +149,7 @@
 	assign S_AXI_RDATA	       = axi_rdata;
 	assign S_AXI_RRESP	      = axi_rresp;
 	assign S_AXI_RVALID	= axi_rvalid;
+	
 
 	// -------------------------------------------------------------------------------------------
 	// Implement axi_awready generation
@@ -469,8 +470,8 @@
 	// Add user logic here
     assign init_txn         = slv_reg0[0:0];
     assign m_address        = slv_reg3[31:0];
-    assign m_pg_mode        = slv_reg6[1:0];
-    assign m_pg_seed        = slv_reg7[31:0];
+    assign pg_mode        = slv_reg6[1:0];
+    assign pg_seed        = slv_reg7[31:0];
 
 
 	// User logic ends
