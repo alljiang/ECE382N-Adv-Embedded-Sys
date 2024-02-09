@@ -545,15 +545,18 @@
     else                                                                            
         counter <= counter;                                                       
     end   
+
+    reg pg_next_reg;
+    assign pg_next = pg_next_reg;
     
-    always @(posedge M_AXI_ACLK)
+    always @(*)
     begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
-            pg_next = 1'b0;
+            pg_next_reg = 1'b0;
         else if (wnext)
-            pg_next = 1'b1;
+            pg_next_reg = 1'b1;
         else
-            pg_next = 1'b0;
+            pg_next_reg = 1'b0;
     end
 
 
@@ -859,10 +862,9 @@
 	            end
 	            else begin
 	                mst_exec_state  <= INIT_WRITE;
-
                     
 	                if (~axi_awvalid && ~start_single_burst_write && 
-                        ~burst_write_active && pg_fifo_full) begin
+                        ~burst_write_active) begin
                         start_single_burst_write <= 1'b1;
                     end
 	                else begin
