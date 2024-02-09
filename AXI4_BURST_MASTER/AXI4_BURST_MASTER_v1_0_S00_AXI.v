@@ -29,6 +29,8 @@
 
 		output wire [31:0] m_address,
 
+        input wire [31:0] debug1,
+
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -439,11 +441,11 @@
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	        3'h0   : reg_data_out <= slv_reg0;
-	        3'h1   : reg_data_out <= {{30{1'b0}},compare_mismatch_found,txn_done};
-	        3'h2   : reg_data_out <= {{31{1'b0}},txn_error};
+	        3'h1   : reg_data_out <= {{30{1'b0}},reads_done, write_done, compare_mismatch_found, txn_done};
+	        3'h2   : reg_data_out <= {{32{1'b0}}};
 	        3'h3   : reg_data_out <= slv_reg3;
 	        3'h4   : reg_data_out <= slv_reg4;
-	        3'h5   : reg_data_out <= {{30{1'b0}}, reads_done, writes_done};
+	        3'h5   : reg_data_out <= debug1;
 	        3'h6   : reg_data_out <= slv_reg6;
 	        3'h7   : reg_data_out <= {32'habcd1234};
 	        default : reg_data_out <= 0;

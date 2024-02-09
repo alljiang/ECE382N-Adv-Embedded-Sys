@@ -107,9 +107,9 @@
 
     wire m00_axi_init_axi_txn;
     wire [31:0] m_address;
-    wire [31:0] m_data;
     wire [1:0]  pg_mode;
     wire [31:0]  pg_seed;
+    wire [31:0]  debug1;
 
     // alljiang
     // wire m00_axi_txn_done;
@@ -134,6 +134,7 @@
         .reads_done(read_done),
         .writes_done(write_done),
         .txn_done(tester_done),
+        .debug1(debug1),
         .txn_error(m00_axi_error),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -228,6 +229,7 @@
                     end
                 end
                 STATE_WRITE_ACTIVE: begin    
+                        pg_rst <= 1'b0;
                     if (write_done)
                         tester_state <= STATE_AWAIT_COMPARE;
                     else
@@ -287,7 +289,7 @@
 		// .TXN_DONE(m00_axi_txn_done),
 		.ERROR(m00_axi_error),
         .m_address(m_address),
-	    .m_data(m_data),
+	    .m_data(pattern_out),
         .pg_next(pg_next),
 
         .fifo_in_write_en(fifo_in_write_en),
@@ -295,6 +297,8 @@
         .fifo_in_full(fifo_in_full),
         .read_done(read_done),
         .write_done(write_done),
+        
+        .debug1(debug1),
 
 		.M_AXI_ACLK(m00_axi_aclk),
 		.M_AXI_ARESETN(m00_axi_aresetn),
