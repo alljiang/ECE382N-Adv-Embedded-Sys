@@ -260,6 +260,7 @@
 	reg  	                        read_mismatch;
 	reg  	                        burst_write_active;
 	reg  	                        burst_read_active;
+    reg [31:0] counter;
 
 	//Interface response error flags
 	wire  	write_resp_error;
@@ -301,7 +302,8 @@
 	assign M_AXI_AWVALID	= axi_awvalid;
 
 	// Write Data(W)
-	assign M_AXI_WDATA	= m_data;
+	// assign M_AXI_WDATA	= m_data;
+	assign M_AXI_WDATA	= counter;
 
 	//All bursts are complete and aligned in this example
 	assign M_AXI_WSTRB	= {(C_M_AXI_DATA_WIDTH/8){1'b1}};
@@ -532,6 +534,18 @@
 	 Data pattern is only a simple incrementing count from 0 for each burst  */
 	// Modify this for user application
     // alljiang
+
+    always @(posedge M_AXI_ACLK)                                                      
+    begin                                                                             
+    if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)                                                         
+        counter <= 'b1;                                                             
+    //else if (wnext && axi_wlast)                                                  
+    //  axi_wdata <= 'b0;                                                           
+    else if (wnext)                                                                 
+        counter <= axi_wdata + 1;                                                   
+    else                                                                            
+        counter <= axi_wdata;                                                       
+    end   
     
     always @(posedge M_AXI_ACLK)
     begin

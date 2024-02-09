@@ -16,7 +16,6 @@
 	(
 		// Users to add ports here
         // alljiang
-        // allenjiang from city 
 
 		output    wire init_txn,
         input     wire txn_done,
