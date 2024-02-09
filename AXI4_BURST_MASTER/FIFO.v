@@ -1,24 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 01/27/2024 02:26:32 AM
-// Design Name: 
-// Module Name: FIFO
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module MY_FIFO #(parameter depth=8)
 (
@@ -32,7 +12,8 @@ module MY_FIFO #(parameter depth=8)
     output fifo_empty
 );
     
-    reg [31:0] memory[depth:0];
+    reg [31:0] memory[7:0];
+    // reg [31:0] memory[depth:0];
     reg [$clog2(depth)-1:0] write_ptr;
     reg [$clog2(depth)-1:0] read_ptr;
     reg [$clog2(depth):0] count;
@@ -40,6 +21,15 @@ module MY_FIFO #(parameter depth=8)
     assign fifo_full = count == depth;
     assign fifo_empty = count == 0;
     assign read_data[31:0] = memory[read_ptr];
+
+    assign memory[0] = 32'h12340000;
+    assign memory[1] = 32'h12340001;
+    assign memory[2] = 32'h12340002;
+    assign memory[3] = 32'h12340003;
+    assign memory[4] = 32'h12340004;
+    assign memory[5] = 32'h12340005;
+    assign memory[6] = 32'h12340006;
+    assign memory[7] = 32'h12340007;
     
     always @(posedge clk) begin
         if (rst) begin
@@ -75,7 +65,7 @@ module MY_FIFO #(parameter depth=8)
         else begin
             if (write_en & !fifo_full) begin
                 write_ptr <= write_ptr + 1;
-                memory[write_ptr] <= write_data;
+                // memory[write_ptr] <= write_data;
             end
         end
     
