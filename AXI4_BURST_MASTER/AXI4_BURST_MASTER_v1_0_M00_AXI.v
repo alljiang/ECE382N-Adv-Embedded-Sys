@@ -542,9 +542,9 @@
     //else if (wnext && axi_wlast)                                                  
     //  axi_wdata <= 'b0;                                                           
     else if (wnext)                                                                 
-        counter <= axi_wdata + 1;                                                   
+        counter <= counter + 1;                                                   
     else                                                                            
-        counter <= axi_wdata;                                                       
+        counter <= counter;                                                       
     end   
     
     always @(posedge M_AXI_ACLK)
