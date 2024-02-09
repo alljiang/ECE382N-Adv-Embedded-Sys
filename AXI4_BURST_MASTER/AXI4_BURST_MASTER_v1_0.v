@@ -116,6 +116,9 @@
     reg tester_done; 
     reg compare_mismatch_found;
 
+    wire read_done;
+    wire write_done;
+
     wire m00_axi_error;
 
     // Instantiation of Axi Bus Interface S00_AXI
@@ -128,6 +131,8 @@
         .pg_mode(pg_mode),
         .pg_seed(pg_seed),
         .compare_mismatch_found(compare_mismatch_found),
+        .reads_done(read_done),
+        .writes_done(write_done),
         .txn_done(tester_done),
         .txn_error(m00_axi_error),
 		.S_AXI_ACLK(s00_axi_aclk),
@@ -162,7 +167,7 @@
 
     MY_FIFO2 #(.depth(8)) FIFO_write_inst (
         .clk(m00_axi_aclk),
-        .rst(!m00_axi_aresetn),
+        .rst(!m00_axi_aresetn), // TODO do proper reset
         .write_en(~fifo_out_full),
         .write_data(pattern_out),
         .read(fifo_read_en),
@@ -186,8 +191,6 @@
     wire fifo_in_empty;
     wire [31:0] fifo_in_read_data;
     wire [31:0] fifo_in_write_data;
-
-    wire read_done;
 
     MY_FIFO2 #(.depth(8)) FIFO_read_inst (
         .clk(m00_axi_aclk),
@@ -218,8 +221,6 @@
     reg [1:0] tester_state;
     reg [12:0] write_byte_counter;
     
-    wire write_done;
-
     always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn) begin
             tester_state <= STATE_IDLE;

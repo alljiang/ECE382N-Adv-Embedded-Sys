@@ -25,6 +25,9 @@
         output wire [31:0] pg_seed,
         input wire compare_mismatch_found,
 
+        input wire reads_done,
+        input wire writes_done,
+
 		output wire [31:0] m_address,
 
 		// User ports ends
@@ -441,7 +444,7 @@
 	        3'h2   : reg_data_out <= {{31{1'b0}},txn_error};
 	        3'h3   : reg_data_out <= slv_reg3;
 	        3'h4   : reg_data_out <= slv_reg4;
-	        3'h5   : reg_data_out <= slv_reg5;
+	        3'h5   : reg_data_out <= {{30{1'b0}}, reads_done, writes_done};
 	        3'h6   : reg_data_out <= slv_reg6;
 	        3'h7   : reg_data_out <= {32'habcd1234};
 	        default : reg_data_out <= 0;
