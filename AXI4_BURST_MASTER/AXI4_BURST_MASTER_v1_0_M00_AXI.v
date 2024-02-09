@@ -776,6 +776,7 @@
 	            write_burst_counter <= write_burst_counter + 1'b1;                                              
 	            //write_burst_counter[C_NO_BURSTS_REQ] <= 1'b1;
             end
+        end
 	    else
 	      write_burst_counter <= write_burst_counter;
 	  end
