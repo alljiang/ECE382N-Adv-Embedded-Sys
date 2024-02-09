@@ -40,6 +40,7 @@
         input wire fifo_in_full,
 
         output wire read_done,
+        output wire write_done,
 
 		// User ports ends
 
@@ -534,21 +535,25 @@
 
     always @(posedge M_AXI_ACLK)
     begin
-        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
-        begin
+        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
             axi_wdata <= 'b1;
-            pg_fifo_read_en <= 1'b0;
         end
+        else if (wnext) begin
+            axi_wdata <= m_data;
+        end
+        else begin
+            axi_wdata <= m_data;
+        end
+    end
+    
+    always @(posedge M_AXI_ACLK)
+    begin
+        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
+            pg_fifo_read_en = 1'b0;
         else if (wnext)
-        begin
-            axi_wdata <= m_data;
-            pg_fifo_read_en <= 1'b1;
-        end
+            pg_fifo_read_en = 1'b1;
         else
-        begin
-            axi_wdata <= m_data;
-            pg_fifo_read_en <= 1'b0;
-        end
+            pg_fifo_read_en = 1'b0;
     end
 
 
@@ -847,12 +852,10 @@
 	            // initiate a write transaction. Write transactions will be
 	            // issued until burst_write_active signal is asserted.
 	            // write controller
-	            if (writes_done)
-	              begin
+	            if (writes_done) begin
 	                mst_exec_state <= INIT_READ;
-	              end
-	            else
-	              begin
+	            end
+	            else begin
 	                mst_exec_state  <= INIT_WRITE;
 
                     
@@ -863,7 +866,7 @@
 	                else begin
 	                    start_single_burst_write <= 1'b0; //Negate to generate a pulse
                     end
-	              end
+	            end
 
 	          INIT_READ:
 	            // This state is responsible to issue start_single_read pulse to

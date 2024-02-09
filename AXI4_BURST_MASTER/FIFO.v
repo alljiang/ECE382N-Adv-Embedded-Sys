@@ -12,7 +12,7 @@ module MY_FIFO #(parameter depth=8)
     output fifo_empty
 );
     
-    reg [31:0] memory[7:0];
+    wire [31:0] memory[7:0];
     // reg [31:0] memory[depth:0];
     reg [$clog2(depth)-1:0] write_ptr;
     reg [$clog2(depth)-1:0] read_ptr;
@@ -57,8 +57,7 @@ module MY_FIFO #(parameter depth=8)
     
     end
     
-    always @(posedge clk) begin
-    
+    always @(posedge clk) begin    
         if (rst) begin
             write_ptr <= 0;
         end
