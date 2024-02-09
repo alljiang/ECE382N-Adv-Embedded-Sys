@@ -158,28 +158,14 @@
 		.S_AXI_RREADY(s00_axi_rready)
 	);
 
-    wire fifo_read_en;
-    wire fifo_out_full;
-    wire fifo_out_empty;
-    
     wire [31:0] pattern_out;
     reg pg_rst;
-
-    MY_FIFO2 #(.depth(8)) FIFO_write_inst (
-        .clk(m00_axi_aclk),
-        .rst(!m00_axi_aresetn), // TODO do proper reset
-        .write_en(~fifo_out_full),
-        .write_data(pattern_out),
-        .read(fifo_read_en),
-        .read_data(m_data),
-        .fifo_full(fifo_out_full),
-        .fifo_empty(fifo_out_empty)
-    );
+    wire pg_next;
 
     PATTERN_GEN PATTERN_GEN_inst (
         .clk(m00_axi_aclk),
         .rst(pg_rst),
-        .stall(fifo_out_full),
+        .stall(~pg_next),
         .pattern_sel(pg_mode),
         .seed(pg_seed),
         .pattern_out(pattern_out)
@@ -302,8 +288,7 @@
 		.ERROR(m00_axi_error),
         .m_address(m_address),
 	    .m_data(m_data),
-        .pg_fifo_read_en(fifo_read_en),
-        .pg_fifo_full(fifo_out_full),
+        .pg_next(pg_next),
 
         .fifo_in_write_en(fifo_in_write_en),
         .fifo_in_write_data(fifo_in_write_data),
