@@ -104,7 +104,7 @@
 		// Master Interface Write Data.
 		output wire [C_M_AXI_DATA_WIDTH-1 : 0] M_AXI_WDATA,
 		// Write strobes. This signal indicates which byte
-    // lanes hold valid data. There is one write strobeARBURST
+    // lanes hold valid data. There is one write strobe
     // bit for each eight bits of the write data bus.
 		output wire [C_M_AXI_DATA_WIDTH/8-1 : 0] M_AXI_WSTRB,
 		// Write last. This signal indicates the last transfer in a write burst.
@@ -155,7 +155,7 @@
 		output wire [3 : 0] M_AXI_ARQOS,
 		// Optional User-defined signal in the read address channel.
 		output wire [C_M_AXI_ARUSER_WIDTH-1 : 0] M_AXI_ARUSER,
-		// Read address valid. This signal indicates that
+		// Write address valid. This signal indicates that
     // the channel is signaling valid read address and control information
 		output wire  M_AXI_ARVALID,
 		// Read address ready. This signal indicates that
@@ -301,7 +301,7 @@
 	assign M_AXI_AWVALID	= axi_awvalid;
 
 	// Write Data(W)
-	assign M_AXI_WDATA	= axi_wdata;
+	assign M_AXI_WDATA	= m_data;
 
 	//All bursts are complete and aligned in this example
 	assign M_AXI_WSTRB	= {(C_M_AXI_DATA_WIDTH/8){1'b1}};
@@ -532,19 +532,6 @@
 	 Data pattern is only a simple incrementing count from 0 for each burst  */
 	// Modify this for user application
     // alljiang
-
-    always @(posedge M_AXI_ACLK)
-    begin
-        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
-            axi_wdata <= 'b1;
-        end
-        else if (wnext) begin
-            axi_wdata <= m_data;
-        end
-        else begin
-            axi_wdata <= m_data;
-        end
-    end
     
     always @(posedge M_AXI_ACLK)
     begin
