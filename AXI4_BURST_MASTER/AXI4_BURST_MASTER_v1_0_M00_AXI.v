@@ -771,10 +771,11 @@
 	      end
 	    else if (M_AXI_AWREADY && axi_awvalid)
         begin
-            // alljiang
-            write_burst_counter <= write_burst_counter + 1'b1;
-            //write_burst_counter[C_NO_BURSTS_REQ] <= 1'b1;
-        end
+            if (write_burst_counter[C_NO_BURSTS_REQ] == 1'b0)                                                   
+            begin                                                                                             
+	            write_burst_counter <= write_burst_counter + 1'b1;                                              
+	            //write_burst_counter[C_NO_BURSTS_REQ] <= 1'b1;
+            end
 	    else
 	      write_burst_counter <= write_burst_counter;
 	  end
@@ -915,7 +916,7 @@
             writes_done <= 1'b0;
 
         //The writes_done should be associated with a bready response
-        else if (M_AXI_BVALID && axi_bready && (write_burst_counter == {(C_NO_BURSTS_REQ-1){1}}) && axi_wlast)
+        else if (M_AXI_BVALID && (write_burst_counter[C_NO_BURSTS_REQ]) && axi_bready)    
             writes_done <= 1'b1;
         else
             writes_done <= writes_done;
