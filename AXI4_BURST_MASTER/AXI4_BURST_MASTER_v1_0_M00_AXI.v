@@ -113,7 +113,12 @@
 		output wire  M_AXI_WLAST,
 		// Optional User-defined signal in the write data channel.
 		output wire [C_M_AXI_WUSER_WIDTH-1 : 0] M_AXI_WUSER,
-		// Write valid. This signal indicates that valid writeAXI_BREADY
+		// Write valid. This signal indicates that valid write
+    // data and strobes are available
+		output wire  M_AXI_WVALID,
+		// Write ready. This signal indicates that the slave
+    // can accept the write data.
+		input wire  M_AXI_WREADY,
 		// Master Interface Write Response.
 		input wire [C_M_AXI_ID_WIDTH-1 : 0] M_AXI_BID,
 		// Write response. This signal indicates the status of the write transaction.
@@ -353,7 +358,7 @@
     reg writes_done_latch;
     assign debug1[30] = writes_done_latch;
 
-    assign debug[29:28] = mst_exec_state;
+    assign debug1[29:28] = mst_exec_state;
 
     reg bready_latch;
     assign debug1[27] = bready_latch;
