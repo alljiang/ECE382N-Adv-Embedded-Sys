@@ -205,6 +205,7 @@
 
 	// total number of burst transfers is master length divided by burst length and burst size
 	 localparam integer C_NO_BURSTS_REQ = C_MASTER_LENGTH-clogb2((C_M_AXI_BURST_LEN*C_M_AXI_DATA_WIDTH/8)-1);
+     // C_NO_BURSTS_REQ = 7
 
 	// Example State machine to initialize counter, initialize write transactions,
 	// initialize read transactions and comparison of read data with the
@@ -352,6 +353,7 @@
     assign read_done = reads_done;
 
     assign debug1[C_NO_BURSTS_REQ : 0] = write_burst_counter[C_NO_BURSTS_REQ : 0];
+    assign debug1[31] = write_burst_counter[C_NO_BURSTS_REQ];
 
 
     // --------------------------------------------------------------------------------------------------
