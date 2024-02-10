@@ -111,9 +111,10 @@
     wire [31:0]  pg_seed;
     wire [31:0]  debug1;
     wire [31:0]  debug2;
+    wire [31:0]  debug3;
 
     // alljiang
-    // wire m00_axi_txn_done;
+    wire init_txn_pulse;
     reg tester_done; 
     reg compare_mismatch_found;
 
@@ -137,6 +138,7 @@
         .txn_done(tester_done),
         .debug1(debug1),
         .debug2(debug2),
+        .debug3(debug3),
         .txn_error(m00_axi_error),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -194,11 +196,12 @@
 
     reg pg_compare_rst;
     wire [31:0] pattern_compare_out;
+    reg pg_compare_next;
 
     PATTERN_GEN PATTERN_GEN_compare_inst (
         .clk(m00_axi_aclk),
         .rst(pg_compare_rst),
-        .stall(fifo_in_empty),
+        .stall(~pg_compare_next),
         .pattern_sel(pg_mode),
         .seed(pg_seed),
         .pattern_out(pattern_compare_out)
@@ -208,12 +211,10 @@
     localparam [1:0] STATE_WRITE_ACTIVE = 2'b01;
     localparam [1:0] STATE_AWAIT_COMPARE = 2'b10;
     reg [1:0] tester_state;
-    reg [12:0] write_byte_counter;
     
     always @(posedge m00_axi_aclk) begin
-        if (!m00_axi_aresetn) begin
+        if (!m00_axi_aresetn || init_txn_pulse) begin
             tester_state <= STATE_IDLE;
-            write_byte_counter <= 13'd0;
             pg_rst <= 1'b1;
         end 
         else begin
@@ -254,23 +255,52 @@
 
     reg [12:0] read_byte_counter;
 
+    assign debug3[12:0] = read_byte_counter;
+    assign debug3[31:30] = tester_state;
+
+    reg [31:0] mismatch_counter;
+    assign debug2[31:0] = mismatch_counter;
+
+    reg [31:0] debug1_reg;
+    assign debug1 = debug1_reg;
+
     always @(posedge m00_axi_aclk) begin
-        if (!m00_axi_aresetn) begin
+        if (!m00_axi_aresetn || init_txn_pulse) begin
             read_byte_counter <= 13'd0;
             pg_compare_rst <= 1'b1;
             compare_mismatch_found <= 1'b0;
         end
         else begin
+            pg_compare_rst <= 1'b0;
             if (~fifo_in_empty) begin
-                fifo_in_read_en <= 1'b1;
                 read_byte_counter <= read_byte_counter + 1'b1;
 
-                if (fifo_in_read_data != pattern_compare_out)
+                if (fifo_in_read_data != pattern_compare_out && !compare_mismatch_found) begin
                     compare_mismatch_found <= 1'b1;
+                    mismatch_counter <= read_byte_counter;
+                    debug1_reg[15:0] <= fifo_in_read_data[15:0];
+                    debug1_reg[31:16] <= pattern_compare_out[15:0];
+                end
             end
             else begin
-                fifo_in_read_en <= 1'b0;
                 read_byte_counter <= read_byte_counter;
+            end
+        end
+    end
+
+    always @(*) begin
+        if (!m00_axi_aresetn || init_txn_pulse) begin
+            pg_compare_next = 1'b0;
+            fifo_in_read_en = 1'b0;
+        end
+        else begin
+            if (~fifo_in_empty) begin
+                pg_compare_next = 1'b1;
+                fifo_in_read_en = 1'b1;
+            end
+            else begin
+                pg_compare_next = 1'b0;
+                fifo_in_read_en = 1'b0;
             end
         end
     end
@@ -288,11 +318,11 @@
 		.C_M_AXI_BUSER_WIDTH(C_M00_AXI_BUSER_WIDTH)
 	) AXI4_BURST_MASTER_v1_0_M00_AXI_inst (
 		.INIT_AXI_TXN(m00_axi_init_axi_txn),
-		// .TXN_DONE(m00_axi_txn_done),
 		.ERROR(m00_axi_error),
         .m_address(m_address),
 	    .m_data(pattern_out),
         .pg_next(pg_next),
+        .init_txn_pulse(init_txn_pulse),
 
         .fifo_in_write_en(fifo_in_write_en),
         .fifo_in_write_data(fifo_in_write_data),
@@ -300,9 +330,6 @@
         .read_done(read_done),
         .write_done(write_done),
         
-        .debug1(debug1),
-        .debug2(debug2),
-
 		.M_AXI_ACLK(m00_axi_aclk),
 		.M_AXI_ARESETN(m00_axi_aresetn),
 		.M_AXI_AWID(m00_axi_awid),
@@ -368,8 +395,7 @@ module MY_FIFO2 #(parameter depth=8)
     output fifo_empty
 );
     
-    wire [31:0] memory[7:0];
-    // reg [31:0] memory[depth:0];
+    reg [31:0] memory[depth:0];
     reg [$clog2(depth)-1:0] write_ptr;
     reg [$clog2(depth)-1:0] read_ptr;
     reg [$clog2(depth):0] count;
@@ -378,15 +404,6 @@ module MY_FIFO2 #(parameter depth=8)
     assign fifo_empty = count == 0;
     assign read_data[31:0] = memory[read_ptr];
 
-    assign memory[0] = 32'h12340000;
-    assign memory[1] = 32'h12340001;
-    assign memory[2] = 32'h12340002;
-    assign memory[3] = 32'h12340003;
-    assign memory[4] = 32'h12340004;
-    assign memory[5] = 32'h12340005;
-    assign memory[6] = 32'h12340006;
-    assign memory[7] = 32'h12340007;
-    
     always @(posedge clk) begin
         if (rst) begin
             count <= 0;

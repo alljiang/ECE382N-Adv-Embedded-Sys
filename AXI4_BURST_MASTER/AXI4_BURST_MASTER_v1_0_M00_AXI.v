@@ -41,8 +41,7 @@
         output wire read_done,
         output wire write_done,
 
-        output wire [31:0] debug1,
-        output wire [31:0] debug2,
+        output wire init_txn_pulse,
 
 		// User ports ends
 
@@ -342,8 +341,7 @@
 	// Read and Read Response (R)
 	assign M_AXI_RREADY			= axi_rready;
 
-	// Example design I/O
-	// assign TXN_DONE				= compare_done;
+    assign write_done = writes_done;
 
 	//  Burst size in bytes
 	assign burst_size_bytes	    = C_M_AXI_BURST_LEN * C_M_AXI_DATA_WIDTH/8;
@@ -351,38 +349,6 @@
     // alljiang
     assign fifo_in_write_data = M_AXI_RDATA;
     assign read_done = reads_done;
-
-    assign debug1[C_NO_BURSTS_REQ : 0] = write_burst_counter[C_NO_BURSTS_REQ : 0];
-    assign debug1[31] = write_burst_counter[C_NO_BURSTS_REQ];
-
-    reg writes_done_latch;
-    assign debug1[30] = writes_done_latch;
-    
-
-    always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
-            writes_done_latch <= 1'b0;
-        else if (writes_done)
-            writes_done_latch <= 1'b1;
-        else
-            writes_done_latch <= writes_done_latch;
-    end
-
-    assign debug2[31:0] = max_awaddr;
-    reg [31:0] max_awaddr;
-
-    always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0)
-            max_awaddr <= 32'h0;
-        else if (M_AXI_AWADDR > max_awaddr)
-            max_awaddr <= M_AXI_AWADDR;
-        else
-            max_awaddr <= max_awaddr;
-    end
-
-
-
-
 
     // --------------------------------------------------------------------------------------------------
 	//    Generate a pulse to initiate AXI transaction.
