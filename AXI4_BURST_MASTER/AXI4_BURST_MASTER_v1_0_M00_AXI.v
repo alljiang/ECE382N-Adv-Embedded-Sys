@@ -360,21 +360,12 @@
     
 
     always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0)
+        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
             writes_done_latch <= 1'b0;
         else if (writes_done)
             writes_done_latch <= 1'b1;
         else
             writes_done_latch <= writes_done_latch;
-    end
-
-    always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0)
-            bready_latch <= 1'b0;
-        else if (M_AXI_BREADY)
-            bready_latch <= 1'b1;
-        else
-            bready_latch <= bready_latch;
     end
 
     assign debug2[31:0] = max_awaddr;
