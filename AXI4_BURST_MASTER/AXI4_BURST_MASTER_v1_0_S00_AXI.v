@@ -30,6 +30,7 @@
 		output wire [31:0] m_address,
 
         input wire [31:0] debug1,
+        input wire [31:0] debug2,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
