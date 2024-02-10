@@ -262,7 +262,7 @@
 	      slv_reg3 <= 32'hfffc0000;    // Test Address
 	      slv_reg4 <= 32'hdeadfeed;    // Canary
 	      slv_reg5 <= 0;               // Not used
-	      slv_reg6 <= 32'b01;          // Pattern Gen Mode [1:0]
+	      slv_reg6 <= 32'b00;          // Pattern Gen Mode [1:0]
 	      slv_reg7 <= 0;               // Pattern Gen Seed
 	    end
 	  else begin

@@ -711,11 +711,11 @@
     always @(posedge M_AXI_ACLK)
     begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)
-            fifo_in_write_en <= 1'b0;
+            fifo_in_write_en = 1'b0;
         else if (M_AXI_RVALID && axi_rready)
-            fifo_in_write_en <= 1'b1;
+            fifo_in_write_en = 1'b1;
         else
-            fifo_in_write_en <= 1'b0;
+            fifo_in_write_en = 1'b0;
     end
 
 
