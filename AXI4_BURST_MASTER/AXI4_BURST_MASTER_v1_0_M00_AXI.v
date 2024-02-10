@@ -357,11 +357,6 @@
 
     reg writes_done_latch;
     assign debug1[30] = writes_done_latch;
-
-    assign debug1[29:28] = mst_exec_state;
-
-    reg bready_latch;
-    assign debug1[27] = bready_latch;
     
 
     always @(posedge M_AXI_ACLK) begin
@@ -382,14 +377,14 @@
             bready_latch <= bready_latch;
     end
 
-    assign debug2[31:0] = axi_awaddr;
+    assign debug2[31:0] = max_awaddr;
     reg [31:0] max_awaddr;
 
     always @(posedge M_AXI_ACLK) begin
         if (M_AXI_ARESETN == 0)
             max_awaddr <= 32'h0;
         else if (M_AXI_AWADDR > max_awaddr)
-            max_awaddr <= m_address;
+            max_awaddr <= M_AXI_AWADDR;
         else
             max_awaddr <= max_awaddr;
     end
