@@ -42,6 +42,7 @@
         output wire write_done,
 
         output wire [31:0] debug1,
+        output wire [31:0] debug2,
 
 		// User ports ends
 
@@ -112,12 +113,7 @@
 		output wire  M_AXI_WLAST,
 		// Optional User-defined signal in the write data channel.
 		output wire [C_M_AXI_WUSER_WIDTH-1 : 0] M_AXI_WUSER,
-		// Write valid. This signal indicates that valid write
-    // data and strobes are available
-		output wire  M_AXI_WVALID,
-		// Write ready. This signal indicates that the slave
-    // can accept the write data.
-		input wire  M_AXI_WREADY,
+		// Write valid. This signal indicates that valid writeAXI_BREADY
 		// Master Interface Write Response.
 		input wire [C_M_AXI_ID_WIDTH-1 : 0] M_AXI_BID,
 		// Write response. This signal indicates the status of the write transaction.
@@ -305,7 +301,6 @@
 
 	// Write Data(W)
 	assign M_AXI_WDATA	= m_data;
-	// assign M_AXI_WDATA	= counter;
 
 	//All bursts are complete and aligned in this example
 	assign M_AXI_WSTRB	= {(C_M_AXI_DATA_WIDTH/8){1'b1}};
@@ -354,6 +349,48 @@
 
     assign debug1[C_NO_BURSTS_REQ : 0] = write_burst_counter[C_NO_BURSTS_REQ : 0];
     assign debug1[31] = write_burst_counter[C_NO_BURSTS_REQ];
+
+    reg writes_done_latch;
+    assign debug1[30] = writes_done_latch;
+
+    assign debug[29:28] = mst_exec_state;
+
+    reg bready_latch;
+    assign debug1[27] = bready_latch;
+    
+
+    always @(posedge M_AXI_ACLK) begin
+        if (M_AXI_ARESETN == 0)
+            writes_done_latch <= 1'b0;
+        else if (writes_done)
+            writes_done_latch <= 1'b1;
+        else
+            writes_done_latch <= writes_done_latch;
+    end
+
+    always @(posedge M_AXI_ACLK) begin
+        if (M_AXI_ARESETN == 0)
+            bready_latch <= 1'b0;
+        else if (M_AXI_BREADY)
+            bready_latch <= 1'b1;
+        else
+            bready_latch <= bready_latch;
+    end
+
+    assign debug2[31:0] = axi_awaddr;
+    reg [31:0] max_awaddr;
+
+    always @(posedge M_AXI_ACLK) begin
+        if (M_AXI_ARESETN == 0)
+            max_awaddr <= 32'h0;
+        else if (M_AXI_AWADDR > max_awaddr)
+            max_awaddr <= m_address;
+        else
+            max_awaddr <= max_awaddr;
+    end
+
+
+
 
 
     // --------------------------------------------------------------------------------------------------
@@ -539,18 +576,6 @@
 	 Data pattern is only a simple incrementing count from 0 for each burst  */
 	// Modify this for user application
     // alljiang
-
-    always @(posedge M_AXI_ACLK)                                                      
-    begin                                                                             
-    if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)                                                         
-        counter <= 'b1;                                                             
-    //else if (wnext && axi_wlast)                                                  
-    //  axi_wdata <= 'b0;                                                           
-    else if (wnext)                                                                 
-        counter <= counter + 1;                                                   
-    else                                                                            
-        counter <= counter;                                                       
-    end   
 
     reg pg_next_reg;
     assign pg_next = pg_next_reg;

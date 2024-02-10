@@ -110,6 +110,7 @@
     wire [1:0]  pg_mode;
     wire [31:0]  pg_seed;
     wire [31:0]  debug1;
+    wire [31:0]  debug2;
 
     // alljiang
     // wire m00_axi_txn_done;
@@ -135,6 +136,7 @@
         .writes_done(write_done),
         .txn_done(tester_done),
         .debug1(debug1),
+        .debug2(debug2),
         .txn_error(m00_axi_error),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -299,6 +301,7 @@
         .write_done(write_done),
         
         .debug1(debug1),
+        .debug2(debug2),
 
 		.M_AXI_ACLK(m00_axi_aclk),
 		.M_AXI_ARESETN(m00_axi_aresetn),
