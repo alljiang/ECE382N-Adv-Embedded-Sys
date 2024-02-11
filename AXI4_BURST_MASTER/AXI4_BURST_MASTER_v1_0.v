@@ -275,7 +275,7 @@
             if (~fifo_in_empty) begin
                 read_byte_counter <= read_byte_counter + 1'b1;
 
-                if (fifo_in_read_data != pattern_compare_out && !compare_mismatch_found) begin
+                if (fifo_in_read_data != pattern_compare_out && !compare_mismatch_found && fifo_in_read_data != 0) begin
                     compare_mismatch_found <= 1'b1;
                     mismatch_counter <= read_byte_counter;
                     debug1_reg[15:0] <= fifo_in_read_data[15:0];
