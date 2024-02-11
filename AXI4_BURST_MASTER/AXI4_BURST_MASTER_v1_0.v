@@ -270,7 +270,7 @@
         if (!m00_axi_aresetn || init_txn_pulse) begin
             debug1_reg <= 32'habcd1234;
         end
-        else if (m00_axi_rdata != 0 && debug1_reg != 32'habcd1234) begin
+        else if (m00_axi_rdata != 0 && debug1_reg == 32'habcd1234) begin
             debug1_reg <= m00_axi_rdata;
         end
     end
