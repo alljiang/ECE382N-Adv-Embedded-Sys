@@ -443,7 +443,7 @@
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	        3'h0   : reg_data_out <= slv_reg0;
-	        3'h1   : reg_data_out <= {{30{1'b0}},reads_done, writes_done, compare_mismatch_found, txn_done};
+	        3'h1   : reg_data_out <= {{28{1'b0}},reads_done, writes_done,compare_mismatch_found,compare_success};
 	        3'h2   : reg_data_out <= debug3;
 	        3'h3   : reg_data_out <= slv_reg3;
 	        3'h4   : reg_data_out <= slv_reg4;

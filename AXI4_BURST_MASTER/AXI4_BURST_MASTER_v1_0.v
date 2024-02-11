@@ -133,6 +133,7 @@
         .pg_mode(pg_mode),
         .pg_seed(pg_seed),
         .compare_mismatch_found(compare_mismatch_found),
+        .compare_success(compare_success),
         .reads_done(read_done),
         .writes_done(write_done),
         .txn_done(tester_done),
@@ -269,28 +270,27 @@
         if (!m00_axi_aresetn || init_txn_pulse) begin
             debug1_reg <= 32'habcd1234;
         end
-        else if (m00_axi_rdata != 0) begin
+        else if (m00_axi_rdata != 0 && debug1_reg != 32'habcd1234) begin
             debug1_reg <= m00_axi_rdata;
         end
     end
 
+    assign compare_success = ~compare_mismatch_found && (read_byte_counter == 1024);
+
     always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn || init_txn_pulse) begin
             read_byte_counter <= 13'd0;
-            pg_compare_rst <= 1'b1;
             compare_mismatch_found <= 1'b0;
         end
         else begin
-            pg_compare_rst <= 1'b0;
-            if (~fifo_in_empty) begin
-                read_byte_counter <= read_byte_counter + 1'b1;
-
-                if (fifo_in_read_data != pattern_compare_out && !compare_mismatch_found && fifo_in_read_data != 0) begin
+            if (m00_axi_rvalid && m00_axi_rready) begin
+                // forward movement of pattern data
+                if (m00_axi_rdata != pattern_compare_out && !compare_mismatch_found) begin
                     compare_mismatch_found <= 1'b1;
                     mismatch_counter <= read_byte_counter;
-//                    debug1_reg[15:0] <= fifo_in_read_data[15:0];
-//                    debug1_reg[31:16] <= pattern_compare_out[15:0];
                 end
+                
+                read_byte_counter <= read_byte_counter + 1;
             end
             else begin
                 read_byte_counter <= read_byte_counter;
@@ -301,19 +301,59 @@
     always @(*) begin
         if (!m00_axi_aresetn || init_txn_pulse) begin
             pg_compare_next = 1'b0;
-            fifo_in_read_en = 1'b0;
+            pg_compare_rst = 1'b1;
         end
         else begin
-            if (~fifo_in_empty) begin
+            pg_compare_rst = 1'b0;
+            if (m00_axi_rvalid && m00_axi_rready) begin
                 pg_compare_next = 1'b1;
-                fifo_in_read_en = 1'b1;
             end
             else begin
                 pg_compare_next = 1'b0;
-                fifo_in_read_en = 1'b0;
             end
         end
     end
+
+//     always @(posedge m00_axi_aclk) begin
+//         if (!m00_axi_aresetn || init_txn_pulse) begin
+//             read_byte_counter <= 13'd0;
+//             pg_compare_rst <= 1'b1;
+//             compare_mismatch_found <= 1'b0;
+//         end
+//         else begin
+//             pg_compare_rst <= 1'b0;
+//             if (~fifo_in_empty) begin
+//                 read_byte_counter <= read_byte_counter + 1'b1;
+
+//                 if (fifo_in_read_data != pattern_compare_out && !compare_mismatch_found && fifo_in_read_data != 0) begin
+//                     compare_mismatch_found <= 1'b1;
+//                     mismatch_counter <= read_byte_counter;
+// //                    debug1_reg[15:0] <= fifo_in_read_data[15:0];
+// //                    debug1_reg[31:16] <= pattern_compare_out[15:0];
+//                 end
+//             end
+//             else begin
+//                 read_byte_counter <= read_byte_counter;
+//             end
+//         end
+//     end
+
+//     always @(*) begin
+//         if (!m00_axi_aresetn || init_txn_pulse) begin
+//             pg_compare_next = 1'b0;
+//             fifo_in_read_en = 1'b0;
+//         end
+//         else begin
+//             if (~fifo_in_empty) begin
+//                 pg_compare_next = 1'b1;
+//                 fifo_in_read_en = 1'b1;
+//             end
+//             else begin
+//                 pg_compare_next = 1'b0;
+//                 fifo_in_read_en = 1'b0;
+//             end
+//         end
+//     end
 
 // Instantiation of Axi Bus Interface M00_AXI
 	AXI4_BURST_MASTER_v1_0_M00_AXI # (
