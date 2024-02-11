@@ -137,8 +137,8 @@
         .reads_done(read_done),
         .writes_done(write_done),
         .txn_done(tester_done),
-        .timer_write(timer_write[39:8]),
-        .timer_read(timer_read[39:8]),
+        .timer_write(timer_write),
+        .timer_read(timer_read),
         .debug1(debug1),
         .debug2(debug2),
         .debug3(debug3),
@@ -216,9 +216,8 @@
     localparam [1:0] STATE_AWAIT_COMPARE = 2'b10;
     reg [1:0] tester_state;
 
-    // throw away last 8 bits of timer
-    reg [40:0] timer_write;
-    reg [40:0] timer_read;
+    reg [31:0] timer_write;
+    reg [31:0] timer_read;
     
     always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn || init_txn_pulse) begin
@@ -253,7 +252,7 @@
                 STATE_AWAIT_COMPARE: begin         
                     timer_read <= timer_read + 1;           
                     // wait for read_done signal
-                    if (read_done && fifo_in_empty) begin
+                    if (read_done) begin
                         tester_state <= STATE_IDLE;
                         tester_done <= 1'b1;
                     end
