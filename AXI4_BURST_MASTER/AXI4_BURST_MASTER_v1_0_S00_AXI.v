@@ -30,6 +30,9 @@
 
 		output wire [31:0] m_address,
 
+        input wire [31:0] timer_write,
+        input wire [31:0] timer_read,
+
         input wire [31:0] debug1,
         input wire [31:0] debug2,
         input wire [31:0] debug3,
@@ -257,14 +260,14 @@
 	begin
 	  if ( S_AXI_ARESETN == 1'b0 )
 	    begin
-	      slv_reg0 <= 0;               // Tester start reg
-	      slv_reg1 <= 0;               // Test status reg
-	      slv_reg2 <= 0;               // Not used
-	      slv_reg3 <= 32'hfffc0000;    // Test Address
-	      slv_reg4 <= 32'hdeadfeed;    // Canary
-	      slv_reg5 <= 0;               // Not used
-	      slv_reg6 <= 32'b00;          // Pattern Gen Mode [1:0]
-	      slv_reg7 <= 0;               // Pattern Gen Seed
+	      slv_reg0 <= {{'b00}{0}};      // Tester start reg, Pattern Gen Mode
+	      slv_reg1 <= 0;                // Pattern Gen Seed
+	      slv_reg2 <= 32'hfffc0000;     // Test Address
+	      slv_reg3 <= 0;                // 
+	      slv_reg4 <= 0;                // Canary
+	      slv_reg5 <= 0;                // 
+	      slv_reg6 <= 0;                // 
+	      slv_reg7 <= 0;                // 
 	    end
 	  else begin
 	    if (slv_reg_wren)
@@ -444,12 +447,12 @@
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	        3'h0   : reg_data_out <= slv_reg0;
-	        3'h1   : reg_data_out <= {{28{1'b0}},reads_done, writes_done,compare_mismatch_found,compare_success};
-	        3'h2   : reg_data_out <= debug3;
-	        3'h3   : reg_data_out <= slv_reg3;
-	        3'h4   : reg_data_out <= slv_reg4;
-	        3'h5   : reg_data_out <= debug1;
-	        3'h6   : reg_data_out <= slv_reg6;
+	        3'h1   : reg_data_out <= slv_reg1;
+	        3'h2   : reg_data_out <= slv_reg2;
+	        3'h3   : reg_data_out <= {{28{1'b0}},reads_done, writes_done,compare_mismatch_found,compare_success};
+	        3'h4   : reg_data_out <= timer_write;
+	        3'h5   : reg_data_out <= timer_read;
+	        3'h6   : reg_data_out <= debug1;
 	        3'h7   : reg_data_out <= debug2;
 	        default : reg_data_out <= 0;
 	      endcase
@@ -475,10 +478,10 @@
 	end
 
 	// Add user logic here
-    assign init_txn         = slv_reg0[0:0];
-    assign m_address        = slv_reg3[31:0];
-    assign pg_mode        = slv_reg6[1:0];
-    assign pg_seed        = slv_reg7[31:0];
+    assign init_txn         = slv_reg0[0];
+    assign m_address        = slv_reg2[31:0];
+    assign pg_mode        = slv_reg0[2:1];
+    assign pg_seed        = slv_reg1[31:0];
 
 
 	// User logic ends
