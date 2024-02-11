@@ -265,6 +265,16 @@
     assign debug1 = debug1_reg;
 
     always @(posedge m00_axi_aclk) begin
+        
+        if (!m00_axi_aresetn || init_txn_pulse) begin
+            debug1_reg <= 32'habcd1234;
+        end
+        else if (m00_axi_rdata != 0) begin
+            debug1_reg <= m00_axi_rdata;
+        end
+    end
+
+    always @(posedge m00_axi_aclk) begin
         if (!m00_axi_aresetn || init_txn_pulse) begin
             read_byte_counter <= 13'd0;
             pg_compare_rst <= 1'b1;
@@ -302,10 +312,6 @@
                 pg_compare_next = 1'b0;
                 fifo_in_read_en = 1'b0;
             end
-        end
-        
-        if (m00_axi_rdata != 0) begin
-            debug1_reg <= m00_axi_rdata;
         end
     end
 
