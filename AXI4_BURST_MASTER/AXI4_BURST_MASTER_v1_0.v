@@ -220,7 +220,7 @@
     reg [31:0] timer_read;
     
     always @(posedge m00_axi_aclk) begin
-        if (!m00_axi_aresetn || init_txn_pulse) begin
+        if (!m00_axi_aresetn) begin
             tester_state <= STATE_IDLE;
             pg_rst <= 1'b1;
             
@@ -231,10 +231,13 @@
             case (tester_state)
                 STATE_IDLE: begin
                     // waits until m00_axi_init_axi_txn bit is set
-                    if (m00_axi_init_axi_txn) begin
+                    if (init_txn_pulse) begin
                         tester_state <= STATE_WRITE_ACTIVE;
                         tester_done <= 1'b0;
                         pg_rst <= 1'b0;
+            
+                        timer_read <= 32'd0;
+                        timer_write <= 32'd0;
                     end
                     else begin
                         tester_state <= STATE_IDLE;
@@ -252,7 +255,7 @@
                 STATE_AWAIT_COMPARE: begin         
                     timer_read <= timer_read + 1;           
                     // wait for read_done signal
-                    if (read_done && fifo_in_empty) begin
+                    if (read_done) begin
                         tester_state <= STATE_IDLE;
                         tester_done <= 1'b1;
                     end
