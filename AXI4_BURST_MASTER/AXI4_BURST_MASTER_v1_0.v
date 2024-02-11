@@ -278,8 +278,8 @@
                 if (fifo_in_read_data != pattern_compare_out && !compare_mismatch_found && fifo_in_read_data != 0) begin
                     compare_mismatch_found <= 1'b1;
                     mismatch_counter <= read_byte_counter;
-                    debug1_reg[15:0] <= fifo_in_read_data[15:0];
-                    debug1_reg[31:16] <= pattern_compare_out[15:0];
+//                    debug1_reg[15:0] <= fifo_in_read_data[15:0];
+//                    debug1_reg[31:16] <= pattern_compare_out[15:0];
                 end
             end
             else begin
@@ -302,6 +302,10 @@
                 pg_compare_next = 1'b0;
                 fifo_in_read_en = 1'b0;
             end
+        end
+        
+        if (m00_axi_rdata != 0) begin
+            debug1_reg <= m00_axi_rdata;
         end
     end
 
