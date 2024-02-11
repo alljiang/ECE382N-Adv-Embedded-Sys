@@ -23,6 +23,7 @@
         output wire [1:0] pg_mode,
         output wire [31:0] pg_seed,
         input wire compare_mismatch_found,
+        intput wire compare_success,
 
         input wire reads_done,
         input wire writes_done,
