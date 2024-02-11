@@ -189,7 +189,8 @@
         .rst(!m00_axi_aresetn),
         .write_en(fifo_in_write_en),
         .write_data(fifo_in_write_data),
-        .read(fifo_in_read_en),
+        // .read(fifo_in_read_en),
+        .read('b1),
         .read_data(fifo_in_read_data),
         .fifo_full(fifo_in_full),
         .fifo_empty(fifo_in_empty)
@@ -265,15 +266,15 @@
     reg [31:0] debug1_reg;
     assign debug1 = debug1_reg;
 
-    always @(posedge m00_axi_aclk) begin
+    // always @(posedge m00_axi_aclk) begin
         
-        if (!m00_axi_aresetn || init_txn_pulse) begin
-            debug1_reg <= 32'habcd1234;
-        end
-        else if (m00_axi_rdata != 0 && debug1_reg == 32'habcd1234) begin
-            debug1_reg <= m00_axi_rdata;
-        end
-    end
+    //     if (!m00_axi_aresetn || init_txn_pulse) begin
+    //         debug1_reg <= 32'habcd1234;
+    //     end
+    //     else if (m00_axi_rdata != 0 && debug1_reg == 32'habcd1234) begin
+    //         debug1_reg <= m00_axi_rdata;
+    //     end
+    // end
 
     assign compare_success = ~compare_mismatch_found && (read_byte_counter == 1024);
 
@@ -287,7 +288,9 @@
                 // forward movement of pattern data
                 if (m00_axi_rdata != pattern_compare_out && !compare_mismatch_found) begin
                     compare_mismatch_found <= 1'b1;
-                    mismatch_counter <= read_byte_counter;
+                    // mismatch_counter <= read_byte_counter;
+                    debug1_reg <= m00_axi_rdata;
+                    mismatch_counter <= pattern_compare_out;
                 end
                 
                 read_byte_counter <= read_byte_counter + 1;
