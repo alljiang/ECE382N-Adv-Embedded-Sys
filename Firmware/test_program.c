@@ -3,10 +3,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
+
+#define TEST_LOOPS 100000  // 0 for continuous
 
 enum pattern_gen_mode {
 	PATTERN_GEN_SLIDING_ZEROES,
@@ -16,12 +20,26 @@ enum pattern_gen_mode {
 
 enum memory_location { MEMORY_LOCATION_OCM, MEMORY_LOCATION_BRAM };
 
+char *memory_location_str[] = {
+    "OCM",
+    "BRAM",
+};
+
 enum PS_clock_frequency {
 	PS_CLK_1499_MHZ,
 	PS_CLK_1250_MHZ,
 	PS_CLK_1000_MHZ,
 	PS_CLK_858_MHZ,
 	PS_CLK_416_6_MHZ,
+	PS_CLK_COUNT
+};
+
+char *ps_clk_str[] = {
+    "1499MHz",
+    "1250MHz",
+    "1000MHz",
+    "858MHz",
+    "416.6MHz",
 };
 
 enum PL_clock_frequency {
@@ -30,6 +48,15 @@ enum PL_clock_frequency {
 	PL_CLK_187_5_MHZ,
 	PL_CLK_150_MHZ,
 	PL_CLK_100_MHZ,
+	PL_CLK_COUNT
+};
+
+char *pl_clk_str[] = {
+    "300MHz",
+    "266MHz",
+    "187.5MHz",
+    "150MHz",
+    "100MHz",
 };
 
 struct test_params {
@@ -67,7 +94,7 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	int i         = 0;
 	uint32_t *pl0 = pl_clk_reg;
 
-	pl0 += 0xC0;  // PL0_REF_CTRL reg offset 0xC0
+	pl0 += 0xC0 / 4;  // PL0_REF_CTRL reg offset 0xC0
 
 	// frequency = 1.5Ghz/divisor0/divisor1
 	switch (pl_clk) {
@@ -76,7 +103,7 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 		div1 = 0x0;
 		break;
 	case PL_CLK_266_MHZ:
-        // not actually 266MHz, but 1.5GHz/6 = 250MHz
+		// not actually 266MHz, but 1.5GHz/6 = 250MHz
 		div0 = 0x6;
 		div1 = 0x0;
 		break;
@@ -101,13 +128,80 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	munmap(pl_clk_reg, 0x1000);
 
 	uint32_t *ps_clk_reg =
-        mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
 
-    uint32_t *apll_ctrl = ps_clk_reg + 0x20;
-    uint32_t *apll_cfg = ps_clk_reg + 0x24;
-    uint32_t *pll_status = ps_clk_reg + 0x44;
+	// 33.3333MHz * FBDIV / DIV_BY_2
+	uint8_t fbdiv, div_by_2;
+	uint8_t lock_dly = 63, lfhf = 3, cp, res;
+	uint16_t lock_cnt;
 
-    munmap(ps_clk_reg, 0x1000);
+	switch (ps_clk) {
+	case PS_CLK_1499_MHZ:
+		fbdiv    = 45;
+		div_by_2 = 0;
+
+		cp       = 3;
+		res      = 12;
+		lock_cnt = 825;
+		break;
+	case PS_CLK_1250_MHZ:
+		fbdiv    = 75;
+		div_by_2 = 1;
+
+		cp       = 3;
+		res      = 2;
+		lock_cnt = 600;
+		break;
+	case PS_CLK_1000_MHZ:
+		fbdiv    = 30;
+		div_by_2 = 0;
+
+		cp       = 4;
+		res      = 6;
+		lock_cnt = 1000;
+		break;
+	case PS_CLK_858_MHZ:
+		fbdiv    = 26;
+		div_by_2 = 0;
+
+		cp       = 3;
+		res      = 10;
+		lock_cnt = 1000;
+		break;
+	case PS_CLK_416_6_MHZ:
+		fbdiv    = 25;
+		div_by_2 = 1;
+
+		cp       = 3;
+		res      = 10;
+		lock_cnt = 1000;
+		break;
+	}
+
+	uint32_t *apll_ctrl  = ps_clk_reg + 0x20 / 4;
+	uint32_t *apll_cfg   = ps_clk_reg + 0x24 / 4;
+	uint32_t *pll_status = ps_clk_reg + 0x44 / 4;
+
+	// step 2 program APLL_CFG
+	*apll_cfg = (lock_dly << 25u) | (lock_cnt << 13u) | (lfhf << 10u) |
+	            (cp << 5u) | res;
+
+	// step 3 program the bypass
+	*apll_ctrl = 0x2D08;
+
+	// step 4 assert reset
+	*apll_ctrl = 0x2D09;
+
+	// step 5 deassert reset
+	*apll_ctrl = 0x2D08;
+
+	// step 6 check for lock, wait until PLL_STATUS[APLL_LOCK] = 0x1
+	while (!(*pll_status & 0x1)) {}
+
+	// step 7 deassert bypass
+	*apll_ctrl = 0x2D00;
+
+	munmap(ps_clk_reg, 0x1000);
 }
 
 struct test_results
@@ -166,15 +260,15 @@ run_test(struct test_params params) {
 
 	do {
 		results = get_results();
-	} while (!results.reads_done && !results.writes_done);
+	} while (!results.reads_done || !results.writes_done);
 
 	tester_regs =
 	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
 
-    // clear test
-    tester_regs[0] = 0;
+	// clear test
+	tester_regs[0] = 0;
 
-    munmap(tester_regs, 32);
+	munmap(tester_regs, 32);
 
 	return results;
 }
@@ -183,23 +277,38 @@ int
 main() {
 	struct test_params params   = {0};
 	struct test_results results = {0};
+	srand(time(0));
 
 	if (!is_sudo()) {
 		printf("Must be ROOT to open /dev/mem\n");
 		return 1;
 	}
 
-	while (1) {
-		params.memory_location  = MEMORY_LOCATION_BRAM;  // Test #1
-		params.memory_location  = MEMORY_LOCATION_OCM;   // Test #2
-		params.pattern_gen_mode = PATTERN_GEN_LFSR;
-		params.pattern_gen_seed = 0x123456;
+	for (int ps = 0; ps < PS_CLK_COUNT; ps++) {
+		for (int pl = 0; pl < PL_CLK_COUNT; pl++) {
+			set_clock(ps, pl);
 
-		printf("test start\n");
-		results = run_test(params);
+			int tests_remaining = TEST_LOOPS;
+			while (TEST_LOOPS == 0 || tests_remaining-- != 0) {
+				// params.memory_location = MEMORY_LOCATION_BRAM;  // Test #1
+				params.memory_location  = MEMORY_LOCATION_OCM;   // Test #2
+				params.pattern_gen_mode = PATTERN_GEN_LFSR;
+				params.pattern_gen_seed = rand();
 
-		print_results(results);
+				results = run_test(params);
+			}
 
-		sleep(1);
+			if (results.compare_success) {
+				printf("Test passed: ");
+			} else {
+				printf("Test failed: ");
+			}
+			printf(
+			    "%d Loops of 1024 32-bit words in %s. PS clk: %s, PL clk: %s\n",
+			    TEST_LOOPS,
+			    memory_location_str[params.memory_location],
+			    ps_clk_str[ps],
+			    pl_clk_str[pl]);
+		}
 	}
 }
