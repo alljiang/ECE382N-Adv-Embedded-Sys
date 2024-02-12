@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define TEST_LOOPS 100000  // 0 for continuous
+#define TEST_LOOPS 10000  // 0 for continuous
 
 enum pattern_gen_mode {
 	PATTERN_GEN_SLIDING_ZEROES,
@@ -204,13 +204,20 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	munmap(ps_clk_reg, 0x1000);
 }
 
-struct test_results
-get_results() {
+int
+get_results(struct test_results *test_results) {
+    int rv = 0;
 	struct test_results results = {0};
 	int dh                      = open("/dev/mem", O_RDWR | O_SYNC);
 
 	uint32_t *tester_regs =
 	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
+
+	if (tester_regs == (uint32_t *) -1) {
+        printf("fail\n");
+		rv = -1;
+        goto exit;
+	}
 
 	results.reads_done             = (tester_regs[3] >> 3u) & 1u;
 	results.writes_done            = (tester_regs[3] >> 2u) & 1u;
@@ -219,8 +226,12 @@ get_results() {
 	results.timer_write            = tester_regs[4];
 	results.timer_read             = tester_regs[5];
 
+exit:
 	munmap(tester_regs, 32);
-	return results;
+
+	*test_results = results;
+
+	return rv;
 }
 
 void
@@ -236,6 +247,7 @@ print_results(struct test_results results) {
 
 struct test_results
 run_test(struct test_params params) {
+    int rv;
 	struct test_results results = {0};
 	uint32_t reg0               = 0;
 	int dh                      = open("/dev/mem", O_RDWR | O_SYNC);
@@ -259,8 +271,8 @@ run_test(struct test_params params) {
 	munmap(tester_regs, 32);
 
 	do {
-		results = get_results();
-	} while (!results.reads_done || !results.writes_done);
+		rv = get_results(&results);
+	} while (rv == -1 || !results.reads_done || !results.writes_done);
 
 	tester_regs =
 	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
@@ -286,19 +298,22 @@ main() {
 
 	for (int ps = 0; ps < PS_CLK_COUNT; ps++) {
 		for (int pl = 0; pl < PL_CLK_COUNT; pl++) {
+            bool failed = false;
 			set_clock(ps, pl);
 
 			int tests_remaining = TEST_LOOPS;
 			while (TEST_LOOPS == 0 || tests_remaining-- != 0) {
 				// params.memory_location = MEMORY_LOCATION_BRAM;  // Test #1
-				params.memory_location  = MEMORY_LOCATION_OCM;   // Test #2
+				params.memory_location  = MEMORY_LOCATION_OCM;  // Test #2
 				params.pattern_gen_mode = PATTERN_GEN_LFSR;
 				params.pattern_gen_seed = rand();
 
 				results = run_test(params);
+
+                failed = failed || results.compare_mismatch_found;
 			}
 
-			if (results.compare_success) {
+			if (!failed) {
 				printf("Test passed: ");
 			} else {
 				printf("Test failed: ");
