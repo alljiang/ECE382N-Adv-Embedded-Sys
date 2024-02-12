@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define TEST_LOOPS 1000  // 0 for continuous
+#define TEST_LOOPS 10000  // 0 for continuous
 
 enum pattern_gen_mode {
 	PATTERN_GEN_SLIDING_ZEROES,
@@ -279,15 +279,15 @@ main() {
 
 			int tests_remaining = TEST_LOOPS;
 			while (TEST_LOOPS == 0 || tests_remaining-- != 0) {
-				// params.memory_location = MEMORY_LOCATION_BRAM;  // Test #1
-				params.memory_location  = MEMORY_LOCATION_OCM;  // Test #2
+				params.memory_location = MEMORY_LOCATION_BRAM;  // Test #1
+				// params.memory_location  = MEMORY_LOCATION_OCM;  // Test #2
 				params.pattern_gen_mode = PATTERN_GEN_LFSR;
 				params.pattern_gen_seed = rand();
 
 				results = run_test(params);
 
 				failed = failed || results.compare_mismatch_found;
-                print_results(results);
+                // print_results(results);
 				fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl], results.timer_write, results.timer_read);
 			}
 
