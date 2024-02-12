@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define TEST_LOOPS 100000  // 0 for continuous
+#define TEST_LOOPS 1000  // 0 for continuous
 
 enum pattern_gen_mode {
 	PATTERN_GEN_SLIDING_ZEROES,
@@ -81,7 +81,8 @@ uint32_t *pl_clk_reg;
 int
 map_regs() {
 	int dh = open("/dev/mem", O_RDWR | O_SYNC);
-    if (dh == -1) return -1;
+	if (dh == -1)
+		return -1;
 
 	tester_regs =
 	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
@@ -136,8 +137,6 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	*pl0 = (1 << 24)       // bit 24 enables clock
 	       | (div1 << 16)  // bit 21:16 is divisor 1
 	       | (div0 << 8);  // bit 13:8 is clock divisor 0
-
-
 
 	// 33.3333MHz * FBDIV / DIV_BY_2
 	uint8_t fbdiv, div_by_2;
@@ -224,7 +223,7 @@ print_results(struct test_results results) {
 
 struct test_results
 run_test(struct test_params params) {
-    int rv;
+	int rv;
 	struct test_results results = {0};
 	uint32_t reg0               = 0;
 
@@ -242,8 +241,8 @@ run_test(struct test_params params) {
 	reg0 |= (params.pattern_gen_mode) << 1u;
 	tester_regs[0] = reg0;
 
-    while (((tester_regs[3] >> 2) & 0b11) != 0b11) {}
-
+	while (((tester_regs[3] >> 2) & 0b11) != 0b11) {}
+    
 	results.reads_done             = (tester_regs[3] >> 3u) & 1u;
 	results.writes_done            = (tester_regs[3] >> 2u) & 1u;
 	results.compare_mismatch_found = (tester_regs[3] >> 1u) & 1u;
@@ -254,7 +253,6 @@ run_test(struct test_params params) {
 	// clear test
 	tester_regs[0] = 0;
 
-
 	return results;
 }
 
@@ -262,7 +260,7 @@ int
 main() {
 	struct test_params params   = {0};
 	struct test_results results = {0};
-    FILE *csv;
+	FILE *csv;
 
 	srand(time(0));
 
@@ -271,11 +269,12 @@ main() {
 		return 1;
 	}
 
-    csv = fopen("Test_out.csv", "w+");
+	csv = fopen("Test_out.csv", "w+");
+	fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
 
 	for (int ps = 0; ps < PS_CLK_COUNT; ps++) {
 		for (int pl = 0; pl < PL_CLK_COUNT; pl++) {
-            bool failed = false;
+			bool failed = false;
 			set_clock(ps, pl);
 
 			int tests_remaining = TEST_LOOPS;
@@ -287,8 +286,9 @@ main() {
 
 				results = run_test(params);
 
-                failed = failed || results.compare_mismatch_found;
-                // fprintf(csv, "%d,", )
+				failed = failed || results.compare_mismatch_found;
+                print_results(results);
+				fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl], results.timer_write, results.timer_read);
 			}
 
 			if (!failed) {
@@ -305,5 +305,5 @@ main() {
 		}
 	}
 
-    unmap_regs();
+	unmap_regs();
 }
