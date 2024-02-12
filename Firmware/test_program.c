@@ -204,36 +204,6 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	munmap(ps_clk_reg, 0x1000);
 }
 
-int
-get_results(struct test_results *test_results) {
-    int rv = 0;
-	struct test_results results = {0};
-	int dh                      = open("/dev/mem", O_RDWR | O_SYNC);
-
-	uint32_t *tester_regs =
-	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
-
-	if (tester_regs == (uint32_t *) -1) {
-        printf("fail\n");
-		rv = -1;
-        goto exit;
-	}
-
-	results.reads_done             = (tester_regs[3] >> 3u) & 1u;
-	results.writes_done            = (tester_regs[3] >> 2u) & 1u;
-	results.compare_mismatch_found = (tester_regs[3] >> 1u) & 1u;
-	results.compare_success        = tester_regs[3] & 1u;
-	results.timer_write            = tester_regs[4];
-	results.timer_read             = tester_regs[5];
-
-exit:
-	munmap(tester_regs, 32);
-
-	*test_results = results;
-
-	return rv;
-}
-
 void
 print_results(struct test_results results) {
 	printf("--------------------------\n");
@@ -268,14 +238,14 @@ run_test(struct test_params params) {
 	reg0 |= (params.pattern_gen_mode) << 1u;
 	tester_regs[0] = reg0;
 
-	munmap(tester_regs, 32);
+    while (((tester_regs[3] >> 2) & 0b11) != 0b11) {}
 
-	do {
-		rv = get_results(&results);
-	} while (rv == -1 || !results.reads_done || !results.writes_done);
-
-	tester_regs =
-	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
+	results.reads_done             = (tester_regs[3] >> 3u) & 1u;
+	results.writes_done            = (tester_regs[3] >> 2u) & 1u;
+	results.compare_mismatch_found = (tester_regs[3] >> 1u) & 1u;
+	results.compare_success        = tester_regs[3] & 1u;
+	results.timer_write            = tester_regs[4];
+	results.timer_read             = tester_regs[5];
 
 	// clear test
 	tester_regs[0] = 0;
