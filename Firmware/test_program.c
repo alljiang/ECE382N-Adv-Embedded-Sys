@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define TEST_LOOPS 10000  // 0 for continuous
+#define TEST_LOOPS 100000  // 0 for continuous
 
 enum pattern_gen_mode {
 	PATTERN_GEN_SLIDING_ZEROES,
@@ -74,23 +74,35 @@ struct test_results {
 	uint32_t timer_read;
 };
 
-bool
-is_sudo() {
+uint32_t *tester_regs;
+uint32_t *ps_clk_reg;
+uint32_t *pl_clk_reg;
+
+int
+map_regs() {
 	int dh = open("/dev/mem", O_RDWR | O_SYNC);
-	return dh != -1;
+    if (dh == -1) return -1;
+
+	tester_regs =
+	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
+	ps_clk_reg =
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
+	pl_clk_reg =
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFF5E0000);
+
+	return 0;
+}
+
+void
+unmap_regs() {
+	munmap(pl_clk_reg, 0x1000);
+	munmap(ps_clk_reg, 0x1000);
+	munmap(tester_regs, 32);
 }
 
 void
 set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	uint8_t div0, div1;
-	int dh = open("/dev/mem", O_RDWR | O_SYNC);
-	if (dh == -1) {
-		printf("Must be ROOT to open /dev/mem\n");
-	}
-
-	uint32_t *pl_clk_reg =
-	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFF5E0000);
-
 	int i         = 0;
 	uint32_t *pl0 = pl_clk_reg;
 
@@ -125,10 +137,7 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	       | (div1 << 16)  // bit 21:16 is divisor 1
 	       | (div0 << 8);  // bit 13:8 is clock divisor 0
 
-	munmap(pl_clk_reg, 0x1000);
 
-	uint32_t *ps_clk_reg =
-	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
 
 	// 33.3333MHz * FBDIV / DIV_BY_2
 	uint8_t fbdiv, div_by_2;
@@ -200,8 +209,6 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 
 	// step 7 deassert bypass
 	*apll_ctrl = 0x2D00;
-
-	munmap(ps_clk_reg, 0x1000);
 }
 
 void
@@ -220,9 +227,6 @@ run_test(struct test_params params) {
     int rv;
 	struct test_results results = {0};
 	uint32_t reg0               = 0;
-	int dh                      = open("/dev/mem", O_RDWR | O_SYNC);
-	uint32_t *tester_regs =
-	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
 
 	tester_regs[1] = params.pattern_gen_seed;
 
@@ -250,7 +254,6 @@ run_test(struct test_params params) {
 	// clear test
 	tester_regs[0] = 0;
 
-	munmap(tester_regs, 32);
 
 	return results;
 }
@@ -259,12 +262,16 @@ int
 main() {
 	struct test_params params   = {0};
 	struct test_results results = {0};
+    FILE *csv;
+
 	srand(time(0));
 
-	if (!is_sudo()) {
+	if (map_regs() == -1) {
 		printf("Must be ROOT to open /dev/mem\n");
 		return 1;
 	}
+
+    csv = fopen("Test_out.csv", "w+");
 
 	for (int ps = 0; ps < PS_CLK_COUNT; ps++) {
 		for (int pl = 0; pl < PL_CLK_COUNT; pl++) {
@@ -281,6 +288,7 @@ main() {
 				results = run_test(params);
 
                 failed = failed || results.compare_mismatch_found;
+                // fprintf(csv, "%d,", )
 			}
 
 			if (!failed) {
@@ -296,4 +304,6 @@ main() {
 			    pl_clk_str[pl]);
 		}
 	}
+
+    unmap_regs();
 }
