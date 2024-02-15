@@ -89,6 +89,12 @@
 		input wire  S_AXI_RREADY
 	);
 
+    reg capture_gate_active;
+    reg capture_complete;
+
+    reg [2:0] state;
+    reg [31:0] cap_timer_out;
+
 	// AXI4LITE signals
 	reg [C_S_AXI_ADDR_WIDTH-1 : 0] 	axi_awaddr;
 	reg  	axi_awready;
@@ -409,6 +415,60 @@
 	
 	assign interrupt_out = slv_reg1[0];
 	assign timer_enable = slv_reg1[1];
+
+    localparam RESET = 3'b111; 
+    localparam COUNT = 3'b010; 
+    localparam WAIT = 3'b011; 
+    localparam IDLE = 3'b100;
+
+    always @(posedge s00_axi_aclk) begin
+        if (!s00_axi_aresetn) begin
+            state <= RESET;
+            cap_timer_out <= 32'b0;
+        end 
+        else begin
+            case (state)
+                RESET: begin
+                    state <= IDLE;
+                end
+                IDLE: begin
+                    cap_timer_out <= 32'b0;
+
+                    if (!timer_enabled)
+                        state <= IDLE;
+                    else if (timer_enabled)
+                        state <= COUNT;
+                end
+                COUNT: begin
+                    cap_timer_out <= cap_timer_out + 1;
+
+                    if (!timer_enabled || capture_gate)
+                        // dma done signal
+                        state <= WAIT;
+                    else
+                        state <= COUNT;
+                end
+                WAIT: begin
+                    if (!timer_enabled)
+                        state <= IDLE;
+                    else
+                        state <= WAIT;
+                end
+            endcase
+        end
+            
+    end
+
+    // dma monitoring logic
+    always @(posedge s00_axi_aclk) begin
+        if (!s00_axi_aresetn) begin
+            capture_gate_active <= 1'b0;
+            capture_complete <= 1'b0;
+        end
+        else begin
+        end
+    end
+
 
 	// User logic ends
 
