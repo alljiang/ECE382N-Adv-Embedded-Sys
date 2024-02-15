@@ -43,11 +43,81 @@
 		output wire  s00_axi_rvalid,
 		input wire  s00_axi_rready
 	);
+
+    localparam RESET = 3'b111; 
+    localparam COUNT = 3'b010; 
+    localparam WAIT = 3'b011; 
+    localparam IDLE = 3'b100;
+
+    reg capture_gate_active;
+    reg capture_complete;
+
+    reg [2:0] state;
+    reg [31:0] cap_timer_out;
+
+    wire interrupt_enabled;
+    wire timer_enabled;
+
+    always @(posedge s00_axi_aclk) begin
+        if (!s00_axi_aresetn) begin
+            state <= RESET;
+            cap_timer_out <= 32'b0;
+        end 
+        else begin
+            case (state)
+                RESET: begin
+                    state <= IDLE;
+                end
+                IDLE: begin
+                    cap_timer_out <= 32'b0;
+
+                    if (!timer_enabled)
+                        state <= IDLE;
+                    else if (timer_enabled)
+                        state <= COUNT;
+                end
+                COUNT: begin
+                    cap_timer_out <= cap_timer_out + 1;
+
+                    if (!timer_enabled || capture_gate)
+                        // dma done signal
+                        state <= WAIT;
+                    else
+                        state <= COUNT;
+                end
+                WAIT: begin
+                    if (!timer_enabled)
+                        state <= IDLE;
+                    else
+                        state <= WAIT;
+                end
+            endcase
+        end
+            
+    end
+
+    // dma monitoring logic
+    always @(posedge s00_axi_aclk) begin
+        if (!s00_axi_aresetn) begin
+            capture_gate_active <= 1'b0;
+            capture_complete <= 1'b0;
+        end
+        else begin
+        end
+    end
+
 // Instantiation of Axi Bus Interface S00_AXI
 	TIMER_CAPTURE_AXI_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) TIMER_CAPTURE_AXI_v1_0_S00_AXI_inst (
+        .capture_gate(capture_gate_active),
+        .capture_complete(capture_complete),
+        .state(state),
+        .cap_timer_out(cap_timer_out),
+        .interrupt_enabled(interrupt_enabled),
+        .timer_enabled(timer_enabled),
+
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
 		.S_AXI_AWADDR(s00_axi_awaddr),
