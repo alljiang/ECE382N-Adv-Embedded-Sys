@@ -420,7 +420,7 @@
     localparam IDLE = 3'b100;
 
     always @(posedge clock_250) begin
-        if (!s00_axi_aresetn) begin
+        if (!S_AXI_ARESETN) begin
             state <= RESET;
             cap_timer_out <= 32'b0;
             capture_complete <= 1'b0;
@@ -433,27 +433,29 @@
                 IDLE: begin
                     cap_timer_out <= 32'b0;
 
-                    if (!timer_enabled)
+                    if (!timer_enable)
                         state <= IDLE;
-                    else if (timer_enabled)
+                    else if (timer_enable)
                         state <= COUNT;
                 end
                 COUNT: begin
                     cap_timer_out <= cap_timer_out + 1;
 
-                    if (!timer_enabled || capture_gate)
+                    if (!timer_enable || capture_gate) begin
                         slv_reg1[0] <= 1'b1;        // assert interrupt_out
                         capture_complete <= 1'b1;   // done with capture
 
                         state <= WAIT;
+                    end                    
                     else
                         state <= COUNT;
                 end
                 WAIT: begin
-                    if (!timer_enabled)
+                    if (!timer_enable) begin
                         capture_complete <= 1'b0;   // new capture, reset capture_complete
 
                         state <= IDLE;
+                    end
                     else
                         state <= WAIT;
                 end

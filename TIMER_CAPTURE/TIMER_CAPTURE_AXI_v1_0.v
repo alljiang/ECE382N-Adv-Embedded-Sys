@@ -15,6 +15,8 @@
 	)
 	(
 		// Users to add ports here
+		input wire clock_250,
+		input wire capture_gate,
 		output wire interrupt_out,
 
 		// User ports ends
@@ -49,7 +51,9 @@
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) TIMER_CAPTURE_AXI_v1_0_S00_AXI_inst (
-        .interrupt_out(interrupt_out),
+	    .clock_250(clock_250),
+	    .capture_gate(capture_gate),
+	    .interrupt_out(interrupt_out),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
 		.S_AXI_AWADDR(s00_axi_awaddr),
