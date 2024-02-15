@@ -15,14 +15,9 @@
 	)
 	(
 		// Users to add ports here
-		
-		input wire capture_gate,
-		input wire capture_complete,
-		input wire [2:0] state,
-		input wire [31:0] cap_timer_out,
-		
+        input wire clock_250,
+        input wire capture_gate,
 		output wire interrupt_out,
-		output wire timer_enable,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -89,9 +84,12 @@
 		input wire  S_AXI_RREADY
 	);
 
-    reg capture_gate_active;
-    reg capture_complete;
+    wire capture_gate;
+    wire capture_gate_sync;
+    wire timer_enable;
+    wire timer_enable_sync;
 
+    reg capture_complete;
     reg [2:0] state;
     reg [31:0] cap_timer_out;
 
@@ -421,10 +419,11 @@
     localparam WAIT = 3'b011; 
     localparam IDLE = 3'b100;
 
-    always @(posedge s00_axi_aclk) begin
+    always @(posedge clock_250) begin
         if (!s00_axi_aresetn) begin
             state <= RESET;
             cap_timer_out <= 32'b0;
+            capture_complete <= 1'b0;
         end 
         else begin
             case (state)
@@ -443,13 +442,17 @@
                     cap_timer_out <= cap_timer_out + 1;
 
                     if (!timer_enabled || capture_gate)
-                        // dma done signal
+                        slv_reg1[0] <= 1'b1;        // assert interrupt_out
+                        capture_complete <= 1'b1;   // done with capture
+
                         state <= WAIT;
                     else
                         state <= COUNT;
                 end
                 WAIT: begin
                     if (!timer_enabled)
+                        capture_complete <= 1'b0;   // new capture, reset capture_complete
+
                         state <= IDLE;
                     else
                         state <= WAIT;
@@ -459,14 +462,15 @@
             
     end
 
-    // dma monitoring logic
-    always @(posedge s00_axi_aclk) begin
-        if (!s00_axi_aresetn) begin
-            capture_gate_active <= 1'b0;
-            capture_complete <= 1'b0;
-        end
-        else begin
-        end
+    reg [2:0] synchronizer_timer_enable;
+    reg [2:0] synchronizer_capture_gate;
+
+    assign timer_enabled_sync = synchronizer_timer_enable[2];
+    assign capture_gate_sync = synchronizer_capture_gate[2];
+
+    always @(negedge clock_250) begin
+        synchronizer_timer_enable <= {synchronizer_timer_enable[1:0], timer_enable};
+        synchronizer_capture_gate <= {synchronizer_capture_gate[1:0], capture_gate};
     end
 
 
