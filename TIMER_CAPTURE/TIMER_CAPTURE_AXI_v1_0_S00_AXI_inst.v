@@ -424,7 +424,6 @@
             state <= RESET;
             cap_timer_out <= 32'b0;
             capture_complete <= 1'b0;
-            interrupt_out <= 1'b0;
         end 
         else begin
             case (state)
