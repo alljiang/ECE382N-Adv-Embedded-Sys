@@ -46,9 +46,27 @@ char *pl_clk_str[] = {
     "100MHz",
 };
 
+enum CDMA_regs {
+	CDMACR,
+	CDMASR,
+	CURDESC_PNTR,
+	CURDESC_PNTR_MSB,
+	TAILDESC_PNTR,
+	TAILDESC_PNTR_MSB,
+	SA,
+	SA_MSB,
+	DA,
+	DA_MSB,
+	BTT
+};
+
 uint32_t *timer_regs;
+uint32_t *cmda_regs;
 uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
+
+uint32_t *ocm;
+uint32_t *bram;
 
 int
 map_regs() {
@@ -57,11 +75,18 @@ map_regs() {
 		return -1;
 
 	timer_regs =
-	    mmap(NULL, 4 * 4, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xB0002000);
+	cmda_regs =
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xB0000000);
 	ps_clk_reg =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
 	pl_clk_reg =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFF5E0000);
+
+	ocm =
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFFFC0000);
+	bram =
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xC0000000);
 
 	return 0;
 }
@@ -71,6 +96,23 @@ unmap_regs() {
 	munmap(pl_clk_reg, 0x1000);
 	munmap(ps_clk_reg, 0x1000);
 	munmap(timer_regs, 4 * 4);
+}
+
+void
+start_dma(uint32_t *src, uint32_t *dst, uint32_t len) {
+	// can do soft reset here if stuffs not working
+
+	// set IOC_IrqEn to 1 (bit 12 of CDMACR)
+	cmda_regs[CDMACR] = cmda_regs[CDMACR] | 0x1 << 12;
+
+	// set SA
+	cmda_regs[SA] = (uintptr_t) src;
+
+	// set DA
+	cmda_regs[DA] = (uintptr_t) dst;
+
+	// set BTT [25:0]. This also starts the transfer
+	cmda_regs[BTT] = len;
 }
 
 void
@@ -104,8 +146,8 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 		div0 = 0xF;
 		div1 = 0x0;
 		break;
-    default:
-        break;
+	default:
+		break;
 	}
 
 	*pl0 = (1 << 24)       // bit 24 enables clock
@@ -197,10 +239,22 @@ main() {
 
 	// csv = fopen("timer_out.csv", "w+");
 	// fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
-    // fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl], results.timer_write, results.timer_read);
+	// fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl],
+	// results.timer_write, results.timer_read);
 
-    
+	// fill up OCM with random data
+	for (int i = 0; i < 0x1000 / 4; i++) {
+        // ocm[i] = rand();
+        ocm[i] = i;
+	}
 
+	// transfer 4k bytes from OCM (0xFFFC_0000) to BRAM (0xC000_0000)
+	start_dma((uint32_t *) 0xFFFC0000, (uint32_t *) 0xC0000000, 0x1000 / 4);
+
+    // print out the first 10 values of BRAM
+    for (int i = 0; i < 10; i++) {
+        printf("BRAM[%d] = %d\n", i, bram[i]);
+    }
 
 	unmap_regs();
 }
