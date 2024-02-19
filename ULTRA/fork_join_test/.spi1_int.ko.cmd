@@ -1,0 +1,1 @@
+cmd_/root/code/ZED/fork_join_test/spi1_int.ko := ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /root/code/ZED/fork_join_test/spi1_int.ko /root/code/ZED/fork_join_test/spi1_int.o /root/code/ZED/fork_join_test/spi1_int.mod.o

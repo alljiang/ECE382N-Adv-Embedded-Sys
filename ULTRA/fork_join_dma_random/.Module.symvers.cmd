@@ -1,0 +1,1 @@
+cmd_/root/code/ULTRA/fork_join_dma_random/Module.symvers := sed 's/\.ko$$/\.o/' /root/code/ULTRA/fork_join_dma_random/modules.order | scripts/mod/modpost    -o /root/code/ULTRA/fork_join_dma_random/Module.symvers -e -i Module.symvers   -T -

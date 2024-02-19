@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.x": "linkerscript",
+        "fs.h": "c",
+        "errno.h": "c"
+    }
+}

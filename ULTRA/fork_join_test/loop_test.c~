@@ -1,0 +1,230 @@
+/*
+ * loop_test.c: Test the SPI port on the SOC
+ *
+  *  AUTHOR: 	Mark McDermott
+ *  CREATED: 	March 5, 2015
+ *  COPYRIGHT:	2015 Insilixa Inc.
+ *
+ *  DESCRIPTION: This program sets up the SPI port on the SOC and performs
+ *               a continuous test of the interface. Currently it sends one
+ *               32 bit word at a time. Next steps will be to send a variable
+ *               number of words. The interface utilizes a kernel module that
+ *               that interrupts this routine once the data is received.
+ *
+ *  DEPENDENCIES: none
+ *
+ *
+ */
+ 
+
+#include "stdio.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/mman.h>                                                                      
+#include <sys/types.h>                                                                     
+#include <sys/stat.h>  
+#include <sys/wait.h>
+
+#define MAP_SIZE 4096UL                                                                                     
+#define MAP_MASK (MAP_SIZE - 1)     
+
+#define DEBUG   // Comment out to turn off debug messages
+
+
+
+static volatile int det_int=0;    // Global flag that is volatile i.e., no caching
+
+// ----------------------------------------------------------------
+//  This routine does the interrupt handling for the main loop.
+// ----------------------------------------------------------------
+
+void sighandler(int signo)
+{
+    if (signo==SIGIO)
+        det_int++;
+//    printf("Interrupt captured by SIGIO\n");  // DEBUG
+    return;  /* Return to main loop */
+
+}
+
+
+int main(int argc, char **argv)
+{
+    unsigned int rx_cnt;        // Receive count
+    struct sigaction action;    // Structure for signalling
+    int fd;                     // File descriptor
+    int rc;
+    int fc;
+
+//    memset(&action, 0, sizeof(action));
+    sigemptyset(&action.sa_mask);
+    sigaddset(&action.sa_mask, SIGIO);
+    
+    action.sa_handler = sighandler;
+    action.sa_flags = 0;
+
+    sigaction(SIGIO, &action, NULL);
+    
+    fd = open("/dev/spi_int", O_RDWR);
+    if (fd == -1) {
+    	perror("Unable to open /dev/spi_int");
+    	rc = fd;
+    	exit (-1);
+    }
+    
+    printf("/dev/spi_int opened successfully \n");    	
+
+    fc = fcntl(fd, F_SETOWN, getpid());
+
+    printf("Made it through fcntl\n");
+    
+    if (fc == -1) {
+    	perror("SETOWN failed\n");
+    	rc = fd;
+    	exit (-1);
+    } 
+    
+    fc= fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_ASYNC);
+
+    if (fc == -1) {
+    	perror("SETFL failed\n");
+    	rc = fd;
+    	exit (-1);
+    }   
+
+
+// ----------------------------------------------------------------
+//
+// Test to make sure we can open up the SPI xmit and receive ports.
+//
+// ----------------------------------------------------------------
+	
+	int fdmem = open("/dev/mem", O_RDWR|O_SYNC, S_IRUSR);
+	
+	if(fdmem == -1)
+	{
+		printf("Unable to open /dev/mem.  Ensure it exists (major=1, minor=1)\n");
+		return -1;
+	}	
+
+   
+    volatile unsigned int *regs;                                           
+    unsigned long spi_base_addr =   0x02008000;     // Base address of the SPI Unit
+                                                                                                            
+    printf("Getting ready to mmap\n");    
+
+    regs = (unsigned int *)mmap(NULL, 
+                                MAP_SIZE, 
+                                PROT_READ|PROT_WRITE, 
+                                MAP_SHARED,
+                                fdmem, 
+                                spi_base_addr & ~MAP_MASK
+                                );    
+	    
+// ----------------------------------------------------------------
+//
+//  This while loop does the testing of the SPI transmit and receive
+//  FIFOs in loopback mode or when connected to the H1KP.
+// 
+// ----------------------------------------------------------------
+
+    volatile unsigned int *address ;                // Address of SPI register                                        
+                                                                                                            
+    
+    unsigned int xmit_offset   =   0x00000004;     // Address of the transmit port
+    unsigned int rcvr_offset   =   0x00000000;     // Address of the receive port             
+    unsigned int test_reg      =   0x00000020;     // Address of the test register
+
+    unsigned int spi_received;
+
+    pid_t childpid;
+    int cnt;
+    int status;
+
+// ------------------------------------------------------------------------------------
+// This for loop performs 32 writes and reads of the SPI data channel.
+// ------------------------------------------------------------------------------------
+
+    for(cnt = 0; cnt < 32; cnt++) 
+    {
+
+        // -----------------------------------------------------------------------------
+        // Fork off a child process to send data to SPI TXFIFO
+        // -----------------------------------------------------------------------------
+        
+        childpid = fork();
+
+        if (childpid >=0)    // Fork suceeded    
+        {
+            // -------------------------------------------------------------------------
+            // This code runs in the child process as the childpid == 0
+            // -------------------------------------------------------------------------
+            
+            if (childpid == 0)
+            {
+                  sleep (.5);
+                  address  = regs + (((spi_base_addr + xmit_offset) & MAP_MASK)>>2);    	
+                  *address = cnt;
+                  //printf("Executed pm command  %x \n", cnt);
+                  exit(0);  // Exit the child process
+            }
+            // -------------------------------------------------------------------------
+            // This code runs in the parent process as the childpid != 0
+            // -------------------------------------------------------------------------
+            
+           else 
+           {
+ 
+                // ----------------------------------------------------------------
+                // Wait for child process to terminate before checking for interrupt 
+                // ----------------------------------------------------------------
+
+                waitpid(childpid, &status, WCONTINUED);
+
+                if (!det_int) continue;     // Go back to top of while loop.
+                
+                det_int = 0;                // Clear interrupt detected flag
+
+                // ----------------------------------------------------------------
+                // Determine how many words are in the RXFIFO
+                // ----------------------------------------------------------------
+
+                address  = regs + (((spi_base_addr + test_reg) & MAP_MASK)>>2);    	
+                rx_cnt   = ((*address)>>8) & 0x7f;
+
+                printf("Interrupt detected -  %d words in the RXFIFO \n", rx_cnt); 
+                
+                // ----------------------------------------------------------------
+                // Unload the RXFIFO
+                // ----------------------------------------------------------------
+
+                while (rx_cnt) 
+                {
+                    address  = regs + (((spi_base_addr + rcvr_offset) & MAP_MASK)>>2);    	
+                    spi_received = *address;
+	
+                    printf("Received: %x \n", spi_received); 
+                    rx_cnt = rx_cnt-1;
+
+                } // while(rx_cnt)
+
+             } // if chilpid ==0
+       } // if childpid >=0
+
+       else  // fork failed
+       {
+           perror("Fork failed");
+           exit(0);
+       } // if childpid >=0
+
+        
+    }  //  for ......
+
+}   // END OF main
+
+
+
+

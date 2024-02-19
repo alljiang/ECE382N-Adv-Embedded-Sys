@@ -1,0 +1,1 @@
+cmd_/home/mcdermot/code/APIs/spi_int/spi_int.ko := arm-linux-gnueabihf-ld -EL -r  -T /usr/src/linux-3.10.17.1-wand-armhf.com/scripts/module-common.lds --build-id  -o /home/mcdermot/code/APIs/spi_int/spi_int.ko /home/mcdermot/code/APIs/spi_int/spi_int.o /home/mcdermot/code/APIs/spi_int/spi_int.mod.o

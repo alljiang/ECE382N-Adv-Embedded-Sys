@@ -1,0 +1,98 @@
+/*
+ *  pm.c
+ *
+ *  author: Mark McDermott 
+ *  Created: Feb 12, 2012
+ *
+ *  
+     pm - write data to a memory location
+     USAGE:    pm (address) (write data) (optional repeat #) 
+     
+     example:  pm 0x40000000 0xaa   
+     output:   0x40000000 = 0x000000aa
+     
+     example:  pm 0x40000000 0x44 0x3   < write 3 times to same address
+     output:   0x40000000 = 0x00000044
+               0x40000000 = 0x00000044
+               0x40000000 = 0x00000044
+ */
+ 
+ 
+#include "stdio.h"
+#include "stdlib.h"
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define MAP_SIZE 4096UL
+#define MAP_MASK (MAP_SIZE - 1)
+
+int main(int argc, char * argv[]) {
+	
+
+	volatile unsigned int *regs, *address ;
+	volatile unsigned int target_addr, offset, value, lp_cnt;
+
+	int fd = open("/dev/mem", O_RDWR|O_SYNC);
+	
+	if(fd == -1)
+	{
+		printf("Unable to open /dev/mem.  Ensure it exists (major=1, minor=1)\n");
+		return -1;
+	}	
+
+	if ((argc != 3) && (argc != 4))
+	{
+		printf("Put Memory - USAGE:  pm (Address) (write data) (optional repeat #) \n");
+		close(fd);
+		return -1;
+	}
+		
+	offset = 0;
+	target_addr = strtoul(argv[1], 0, 0);
+    lp_cnt = 1; // Display at least 1 location
+    
+    if (argc == 4) 	lp_cnt = strtoul(argv[3], 0, 0);
+    
+    if (lp_cnt > 0x3ff)  { // Max is 4096 bytes
+        lp_cnt = 0x3ff; 
+        printf("Setting max repeat value to 0x3ff\n");
+        
+    }   
+	
+	regs = (unsigned int *)mmap(NULL, 
+	                            MAP_SIZE, 
+	                            PROT_READ|PROT_WRITE, 
+	                            MAP_SHARED, 
+	                            fd, 
+	                            target_addr & ~MAP_MASK);		
+
+    while (lp_cnt) {
+    
+	    printf("0x%.8x" , (target_addr + offset));
+
+        address = regs + (((target_addr+ offset) & MAP_MASK)>>2);    	
+    	
+		value = strtoul(argv[2], 0, 0);
+		*address = value; 						// perform write command
+	
+	    printf(" = 0x%.8x\n", *address);		// display register value
+	    
+	    lp_cnt -= 1;
+	  	    
+	  } // End of while loop
+	  
+			
+	int temp = close(fd);
+	if(temp == -1)
+	{
+		printf("Unable to close /dev/mem.  Ensure it exists (major=1, minor=1)\n");
+		return -1;
+	}	
+
+	munmap(NULL, MAP_SIZE);
+	
+	return 0;
+}

@@ -1,0 +1,19 @@
+
+
+KDIR= /usr/src/linux-headers-4.9.0-xilinx-v2017.4/
+LIBPATH=$(KDIR)/lib
+INCPATH=$(KDIR)/include
+
+CC := arm-linux-gnueabihf-gcc 
+
+PWD		:= $(shell pwd)
+CFLAGS=  -I$(INCPATH) -L$(LIBPATH)
+
+//STRIP=$(PROC)-$(TYPE)-strip
+
+fm:
+	$(CC) $(CFLAGS)  fm.c  -o $@
+
+clean:
+	rm pm
+

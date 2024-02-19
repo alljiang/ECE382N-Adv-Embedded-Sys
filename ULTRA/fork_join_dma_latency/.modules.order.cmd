@@ -1,0 +1,1 @@
+cmd_/root/code/ULTRA/fork_join_dma_latency/modules.order := {   echo /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.ko; :; } | awk '!x[$$0]++' - > /root/code/ULTRA/fork_join_dma_latency/modules.order

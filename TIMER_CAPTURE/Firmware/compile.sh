@@ -1,0 +1,1 @@
+gcc dma_driver.c -g -I /usr/src/5.15.36-xilinx-v2022.2/include -o dma_driver

@@ -1,0 +1,1 @@
+cmd_/root/code/ULTRA/fork_join_dma_latency/dma_interrupt.ko := ld -r  -EL  -maarch64elf  --build-id=sha1  -T scripts/module.lds -o /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.ko /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.o /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.mod.o;  true

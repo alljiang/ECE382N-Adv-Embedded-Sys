@@ -1,0 +1,49 @@
+This directory contains the spi_int kernel module that is 
+used to register SPI interrupts with the kernel. All routines
+that use the interrupt capabilities of the SPI must use this
+routine.
+
+The kernel module is loaded during boot time and does not need
+to be inserted into the kernel manually. Additionally the 
+/dev/spi_int device is created during boot.
+
+The loop_test routine in this directory is used to manually
+test the interrupt mechanism. Prior to running the manual
+test the SPI needs to be initialized using:
+
+./init_spi.sh
+
+
+At this point the loop_test.exe can be executed using
+the following Linux command:
+
+./loop_test.exe
+
+This command will sleep until it receives an interrupt.
+Once the command is woken up it reads the RX buffer in 
+the SPI unit, prints the result and then goes back to  
+sleep. A typical output stream would look like:        
+                                                       
+ Interrupt detected - Received: 54887881               
+Going to sleep                                         
+ Interrupt detected - Received: aaaaaaaa               
+Going to sleep                                         
+ Interrupt detected - Received: 54887881               
+Going to sleep                                        
+ Interrupt detected - Received: aaaaaaaa             
+Going to sleep                                 
+                                        
+The following shell script (loop_spi.sh) is used to
+send data to the SPI unit:                         
+                                                   
+while (ls > /dev/null  ) do                        
+   /bin/pm 0x02008004 0x54887881 > /dev/null       
+   sleep 0.5                                       
+   /bin/pm 0x02008004 0xaaaaaaaa > /dev/null       
+    sleep 0.5                                      
+done                                               
+                                                   
+            
+
+
+ 

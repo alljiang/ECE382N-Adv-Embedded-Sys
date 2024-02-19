@@ -1,0 +1,7 @@
+make -C /usr/src/plnx_kernel M=/root/code/ULTRA/fork_join_dma_latency modules
+make[1]: Entering directory '/usr/src/5.15.36-xilinx-v2022.2'
+  CC [M]  /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.o
+scripts/Makefile.build:277: recipe for target '/root/code/ULTRA/fork_join_dma_latency/dma_interrupt.o' failed
+Makefile:1868: recipe for target '/root/code/ULTRA/fork_join_dma_latency' failed
+make[1]: Leaving directory '/usr/src/5.15.36-xilinx-v2022.2'
+Makefile:29: recipe for target 'default' failed

@@ -1,0 +1,1 @@
+cmd_/root/code/ULTRA/fork_join_dma/dma_interrupt.ko := ld -EL -r  -maarch64linux -T ./scripts/module-common.lds --build-id  -o /root/code/ULTRA/fork_join_dma/dma_interrupt.ko /root/code/ULTRA/fork_join_dma/dma_interrupt.o /root/code/ULTRA/fork_join_dma/dma_interrupt.mod.o ;  true

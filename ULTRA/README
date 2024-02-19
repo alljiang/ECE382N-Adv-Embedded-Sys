@@ -1,0 +1,57 @@
+This directory contains a number of useful functions:
+
+pm - write data to a memory location
+     USAGE:    pm (address) (write data) (optional repeat #) 
+     
+     example:  pm 0x40000000 0xaa   
+     output:   0x40000000 = 0x000000aa
+     
+     example:  pm 0x40000000 0x44 0x3   < write 3 times
+     output:   0x40000000 = 0x00000044
+               0x40000000 = 0x00000044
+               0x40000000 = 0x00000044
+
+dm - display memory location
+     USAGE:     dm (address) (repeat)
+     
+     example:   dm 0x40000000 
+     output:    0x40000000 = 0x00000044
+
+     example:   dm 0x40000000 0x3
+     output:    0x40000000 = 0x00000044
+                0x40000004 = 0x00000056
+                0x40000008 = 0x00000057
+     
+        
+fm - fill memory with data
+     USAGE:     fm (address) (write data) (count) (increment) 
+
+     Example:   fm 0x40000000 0x55 0x5 0x1
+                0x40000000 = 0x00000055
+                0x40000004 = 0x00000056
+                0x40000008 = 0x00000057
+                0x4000000c = 0x00000058
+                0x40000010 = 0x00000059
+
+frm - Fill memory with random data 
+      USAGE:  fm (address) (count)
+    
+      Example:  frm 0x40000000 0x5
+                0x40000000 = 0x3d6af58a
+                0x40000004 = 0x440be909
+                0x40000008 = 0x25b16123
+                0x4000000c = 0x648b26f3
+                0x40000010 = 0x177985f0
+      
+
+smb - Set/Clear memory bit   
+      USAGE:    smb (address) (pin number) (data)  
+
+      EXAMPLE:  smb 0x40000000 0x2 0x1
+                Read  0x40000000 = 0x00000000
+                Write 0x40000000 = 0x00000004
+                
+                smb 0x40000000 0x2 0x0
+                Read  0x40000000 = 0x00000004
+                Write 0x40000000 = 0x00000000
+

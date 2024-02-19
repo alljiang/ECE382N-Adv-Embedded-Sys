@@ -1,0 +1,26 @@
+//PROC=arm
+//TYPE=linux
+//VERSION=3.32
+KDIR= /home/ecelrc/faculty/mcdermot/linux/coglinux-2.6.16
+LIBPATH=$(KDIR)/lib
+INCPATH=$(KDIR)/include
+//CC=$(PROC)-$(TYPE)-gcc
+//CFLAGS=--static -I$(INCPATH) -L$(LIBPATH)
+
+CC := arm-none-linux-gnueabi-gcc 
+
+//obj-m	:= mx21_gpio.o
+
+//KDIR	:= /home/ecelrc/faculty/mcdermot/linux/coglinux-2.6.16
+
+PWD		:= $(shell pwd)
+CFLAGS=   -I$(INCPATH) -L$(LIBPATH)
+
+//STRIP=$(PROC)-$(TYPE)-strip
+
+pm:
+	$(CC) $(CFLAGS)  pm.c  -o $@
+
+clean:
+	rm pm
+

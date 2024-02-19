@@ -1,0 +1,21 @@
+This directory contains code to test them Xilinx CDMA functionality
+using the fork-join and interrupt contsructs that we teach in class.
+
+There are 5 main files:
+
+dma_interrupt.c
+   This is the kernel module for the CDMA interrupts
+
+dma_test.c
+   This is the testing code
+
+setup.sh
+   This code sets up /dev
+   
+system_wrapper.bit
+   This is a working.bit file that can be loaded using:
+      cat system_wrapper.bit > /dev/xdevcfg
+      
+uImage-zynq-zed.dts
+    This is the master DTS file that works with the system_wrapper.bit file
+
