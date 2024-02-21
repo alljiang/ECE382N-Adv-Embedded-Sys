@@ -27,8 +27,8 @@ PWD   := $(shell pwd)
 
 default:
 	$(MAKE) -j4 -C $(KDIR) M=$(PWD) modules
-	$(CC)  test1.c -o test1
-	$(CC)  test2.c -o test2
+	$(CC)  test1.c -o test1 -lm
+	$(CC)  test2.c -o test2 -lm
 
 #csv:
 #	$(CC)  intr_latency_csv.c -o intr_latency_csv

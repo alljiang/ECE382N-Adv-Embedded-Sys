@@ -1,5 +1,6 @@
 
 #include <fcntl.h>
+#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -14,7 +15,7 @@
 
 #include "clock.h"
 
-#define NUM_WORDS_TO_TEST (0x1000 / 4)
+#define NUM_TEST_SAMPLES 10000
 
 enum memory_location { MEMORY_LOCATION_OCM, MEMORY_LOCATION_BRAM };
 
@@ -24,14 +25,19 @@ uint32_t *cmda_regs;
 uint32_t *ocm;
 uint32_t *bram;
 
+int interrupt_timer_out;
+int interrupt_count = 0;
+
+int history[NUM_TEST_SAMPLES];
+
 void
 sighandler(int signo) {
 	if (signo == SIGIO) {
-        int timer_out = timer_regs[2];
-        printf("Interrupt received. Time: %d\n", timer_out);
+		interrupt_timer_out        = timer_regs[2] / 250;  // convert to us
+		history[interrupt_count++] = interrupt_timer_out;
 
-        // stop timer
-        timer_regs[1] &= ~0b11;
+		// stop timer
+		timer_regs[1] &= ~0b11;
 	}
 
 	return; /* Return to main loop */
@@ -63,11 +69,11 @@ map_regs() {
 void
 unmap_regs() {
 	munmap(timer_regs, 0x1000);
-    munmap(cmda_regs, 0x1000);
+	munmap(cmda_regs, 0x1000);
 	munmap(ps_clk_reg, 0x1000);
 	munmap(pl_clk_reg, 0x1000);
-    munmap(ocm, 0x4000);
-    munmap(bram, 0x1000);
+	munmap(ocm, 0x4000);
+	munmap(bram, 0x1000);
 }
 
 void
@@ -111,15 +117,6 @@ setup_capture_timer_interrupt() {
 	}
 }
 
-void
-run_test_2() {
-	timer_regs[1] &= ~0b11;
-    usleep(1);
-	timer_regs[1] |= 0b11;
-
-	wait_timer();
-}
-
 int
 main() {
 	FILE *csv;
@@ -134,23 +131,52 @@ main() {
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ, PL_CLK_250_MHZ);
 	setup_capture_timer_interrupt();
 
-	// csv = fopen("timer_out.csv", "w+");
-	// fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
-	// fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl],
-	// results.timer_write, results.timer_read);
+	for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
+		timer_regs[1] &= ~0b11;
+		usleep(1);
+		timer_regs[1] |= 0b11;
 
-	// transfer 4k bytes from OCM (0xFFFC_0000) to BRAM (0xC000_0000)
-	// printf("DMA started\n");
-	// wait_dma();
+		wait_timer();
 
-	// if (memcmp(ocm, bram, NUM_WORDS_TO_TEST) == 0) {
-	// 	printf("OCM and BRAM are the same\n");
-	// } else {
-	//     printf("OCM and BRAM are different\n");
-	// }
+		// printf("Iteration %d: %d\n", i, interrupt_timer_out);
+	}
 
-	// run_test_1();
-	run_test_2();
+	// calculate stats
+	int min = history[0];
+	int max = history[0];
+	int sum = 0;
+	for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
+		if (history[i] < min) {
+			min = history[i];
+		}
+		if (history[i] > max) {
+			max = history[i];
+		}
+		sum += history[i];
+	}
+
+	float stdev = 0;
+	float mean  = (float) sum / interrupt_count;
+	for (int i = 0; i < interrupt_count; i++) {
+		stdev += (history[i] - mean) * (history[i] - mean);
+	}
+	stdev = sqrt(stdev / (interrupt_count - 1));
+
+	int proc_interrupts_count = 0;
+	// get output of cat /proc/interrupts | grep capture-timer
+	FILE *proc_interrupts =
+	    popen("cat /proc/interrupts | grep capture-timer", "r");
+	fscanf(proc_interrupts, "%*s %d", &proc_interrupts_count);
+	pclose(proc_interrupts);
+
+	printf("********************************\n");
+	printf("Minimum Latency: %d\n", min);
+	printf("Maximum Latency: %d\n", max);
+	printf("Average Latency: %.2f\n", mean);
+	printf("Standard Deviation: %.2f\n", stdev);
+	printf("Number of samples: %d\n", interrupt_count);
+	printf("/proc/interrupts count: %d\n", proc_interrupts_count);
+	printf("********************************\n");
 
 	unmap_regs();
 }
