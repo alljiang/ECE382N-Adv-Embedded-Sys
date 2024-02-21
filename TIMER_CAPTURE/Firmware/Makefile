@@ -27,17 +27,19 @@ PWD   := $(shell pwd)
 
 default:
 	$(MAKE) -j4 -C $(KDIR) M=$(PWD) modules
-	$(CC)  test_program.c -o test_program
+	$(CC)  test1.c -o test1
+	$(CC)  test2.c -o test2
 
 #csv:
 #	$(CC)  intr_latency_csv.c -o intr_latency_csv
 
 gdb: 
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
-	$(CC)  test_program.c -g -DDEBUG -o test_program_gdb
+	$(CC)  test1.c -g -DDEBUG -o test1_gdb
+	$(CC)  test2.c -g -DDEBUG -o test2_gdb
 	
 clean::
-	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe test_program
-	$(RM)  test_program_gdb
+	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe test1 test2
+	$(RM)  test1_gdb test2_gdb
 	$(RM) -R .tmp*
 
