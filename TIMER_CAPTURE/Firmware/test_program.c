@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -86,7 +87,7 @@ map_regs() {
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFF5E0000);
 
 	ocm =
-	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFFFC0000);
+	    mmap(NULL, 0x4000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFFFC0000);
 	bram =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0028000);
 
@@ -102,7 +103,9 @@ unmap_regs() {
 
 void
 start_dma(uint32_t *src, uint32_t *dst, uint32_t len) {
-	// can do soft reset here if stuffs not working
+	// soft reset
+	cmda_regs[CDMACR] = 0b100;
+	while (cmda_regs[CDMACR] & 0b100) {}
 
 	// set IOC_IrqEn to 1 (bit 12 of CDMACR)
 	cmda_regs[CDMACR] = cmda_regs[CDMACR] | 0x1 << 12;
@@ -119,7 +122,12 @@ start_dma(uint32_t *src, uint32_t *dst, uint32_t len) {
 
 void
 wait_dma() {
-    while (!(cmda_regs[CDMASR] & 0x2)) {}
+	while (!(cmda_regs[CDMASR] & 0x2)) {}
+}
+
+void
+wait_timer() {
+	while ((timer_regs[3] & 0b111) == 0b010) {}
 }
 
 void
@@ -233,6 +241,72 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	*apll_ctrl = 0x2D00;
 }
 
+void
+run_test_1() {
+	// 1. fill ocm with random data
+	for (int i = 0; i < NUM_WORDS_TO_TEST; i++) { ocm[i] = rand(); }
+
+	// 2. use dma to transfer from ocm to bram
+
+	// clear CDMACR
+	cmda_regs[CDMACR] = 0;
+
+	// set timer_enable to 0
+	timer_regs[1] = timer_regs[1] & ~0b10;
+
+	// set timer_enable to 1
+	timer_regs[1] = timer_regs[1] | 0b10;
+
+	start_dma(
+	    (uint32_t *) 0xFFFC0000, (uint32_t *) 0xC0000000, NUM_WORDS_TO_TEST);
+
+	wait_timer();
+
+	// 3. measure the time it takes to transfer
+	int timer_out = timer_regs[2];
+	printf("OCM -> BRAM timer_out: %d\n", timer_out);
+
+	// set timer_enable to 0
+	timer_regs[1] = timer_regs[1] & ~0b10;
+
+	if (!memcmp(ocm, bram, NUM_WORDS_TO_TEST)) {
+		// printf("OCM -> BRAM success\n");
+	} else {
+		printf("OCM -> BRAM fail\n");
+	}
+
+	// 4. use dma to transfer from bram to ocm
+
+	// clear CDMACR
+	cmda_regs[CDMACR] = 0;
+
+	// set timer_enable to 1
+	timer_regs[1] = timer_regs[1] | 0b10;
+
+	start_dma(
+	    (uint32_t *) 0xC0000000, (uint32_t *) 0xFFFC2000, NUM_WORDS_TO_TEST);
+
+	// 5. measure the time it takes to transfer
+	timer_out = timer_regs[2];
+	printf("BRAM -> OCM timer_out: %d\n", timer_out);
+
+	// set timer_enable to 0
+	timer_regs[1] = timer_regs[1] & ~0b10;
+
+	if (!memcmp(ocm, bram, NUM_WORDS_TO_TEST)) {
+		// printf("BRAM -> OCM success\n");
+	} else {
+		printf("BRAM -> OCM fail\n");
+	}
+
+	// 6. compare ocm
+	if (!memcmp(ocm, &ocm[2048], NUM_WORDS_TO_TEST)) {
+		printf("OCM -> BRAM -> OCM success\n");
+	} else {
+		printf("OCM -> BRAM -> OCM fail\n");
+	}
+}
+
 int
 main() {
 	FILE *csv;
@@ -244,29 +318,24 @@ main() {
 		return 1;
 	}
 
+	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
+
 	// csv = fopen("timer_out.csv", "w+");
 	// fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
 	// fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl],
 	// results.timer_write, results.timer_read);
 
-	// fill up OCM with random data
-    printf("Filling up OCM with random data\n");
-	for (int i = 0; i < NUM_WORDS_TO_TEST; i++) {
-        int random = rand();
-		ocm[i] = random;
-	}
-    printf("OCM filled\n");
-
 	// transfer 4k bytes from OCM (0xFFFC_0000) to BRAM (0xC000_0000)
-	start_dma((uint32_t *) 0xFFFC0000, (uint32_t *) 0xC0000000, 0x1000 / 4);
-    printf("DMA started\n");
-    wait_dma();
+	// printf("DMA started\n");
+	// wait_dma();
 
-	if (memcmp(ocm, bram, NUM_WORDS_TO_TEST) == 0) {
-		printf("OCM and BRAM are the same\n");
-    } else {
-        printf("OCM and BRAM are different\n");
-    }
+	// if (memcmp(ocm, bram, NUM_WORDS_TO_TEST) == 0) {
+	// 	printf("OCM and BRAM are the same\n");
+	// } else {
+	//     printf("OCM and BRAM are different\n");
+	// }
+
+	run_test_1();
 
 	unmap_regs();
 }

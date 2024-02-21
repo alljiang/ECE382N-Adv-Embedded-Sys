@@ -43,7 +43,7 @@
 #define MODULE_VER "1.0"
 //#define INTERRUPT  164                  // Should use gic_interrupt number
 
-#define DMA_MAJOR 241                  // Need to mknod /dev/dma_int c 241 0
+#define DMA_MAJOR 235                  // Need to mknod /dev/dma_int c 241 0
 #define MODULE_NM "dma_interrupt"
 
 #undef DEBUG
@@ -187,9 +187,9 @@ struct file_operations dma_fops = {
     .write          =    NULL,
 };
 
-struct file_operations proc_fops = {
-    read: read_proc,
-    write: write_proc
+static const struct proc_ops proc_fops = {
+    .proc_read = read_proc,
+    .proc_write = write_proc,
 };
 
 /* ===================================================================
@@ -208,12 +208,9 @@ struct file_operations proc_fops = {
 		};
  */
 
-
 static const struct of_device_id zynq_dma_of_match[] = {
-    { .compatible = "xlnx,zynqmp-dma-1.1" }, 
-    { /* end of table */ }
-};    
-    
+    {.compatible = "xlnx,axi-cdma-4.1"}, {/* end of table */}};
+
 MODULE_DEVICE_TABLE(of, zynq_dma_of_match);
 
 
