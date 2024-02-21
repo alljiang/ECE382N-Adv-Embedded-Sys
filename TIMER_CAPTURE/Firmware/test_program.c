@@ -10,6 +10,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#define NUM_WORDS_TO_TEST (0x1000 / 4)
+
 enum memory_location { MEMORY_LOCATION_OCM, MEMORY_LOCATION_BRAM };
 
 enum PS_clock_frequency {
@@ -86,7 +88,7 @@ map_regs() {
 	ocm =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFFFC0000);
 	bram =
-	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xC0000000);
+	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0028000);
 
 	return 0;
 }
@@ -113,6 +115,11 @@ start_dma(uint32_t *src, uint32_t *dst, uint32_t len) {
 
 	// set BTT [25:0]. This also starts the transfer
 	cmda_regs[BTT] = len;
+}
+
+void
+wait_dma() {
+    while (!(cmda_regs[CDMASR] & 0x2)) {}
 }
 
 void
@@ -243,17 +250,22 @@ main() {
 	// results.timer_write, results.timer_read);
 
 	// fill up OCM with random data
-	for (int i = 0; i < 0x1000 / 4; i++) {
-        // ocm[i] = rand();
-        ocm[i] = i;
+    printf("Filling up OCM with random data\n");
+	for (int i = 0; i < NUM_WORDS_TO_TEST; i++) {
+        int random = rand();
+		ocm[i] = random;
 	}
+    printf("OCM filled\n");
 
 	// transfer 4k bytes from OCM (0xFFFC_0000) to BRAM (0xC000_0000)
 	start_dma((uint32_t *) 0xFFFC0000, (uint32_t *) 0xC0000000, 0x1000 / 4);
+    printf("DMA started\n");
+    wait_dma();
 
-    // print out the first 10 values of BRAM
-    for (int i = 0; i < 10; i++) {
-        printf("BRAM[%d] = %d\n", i, bram[i]);
+	if (memcmp(ocm, bram, NUM_WORDS_TO_TEST) == 0) {
+		printf("OCM and BRAM are the same\n");
+    } else {
+        printf("OCM and BRAM are different\n");
     }
 
 	unmap_regs();

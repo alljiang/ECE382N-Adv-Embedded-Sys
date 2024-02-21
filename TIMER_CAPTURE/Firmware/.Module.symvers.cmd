@@ -1,0 +1,1 @@
+cmd_/home/ee382n/ECE382N-Adv-Embedded-Sys/TIMER_CAPTURE/Firmware/Module.symvers := sed 's/\.ko$$/\.o/' /home/ee382n/ECE382N-Adv-Embedded-Sys/TIMER_CAPTURE/Firmware/modules.order | scripts/mod/modpost    -o /home/ee382n/ECE382N-Adv-Embedded-Sys/TIMER_CAPTURE/Firmware/Module.symvers -e -i Module.symvers   -T -
