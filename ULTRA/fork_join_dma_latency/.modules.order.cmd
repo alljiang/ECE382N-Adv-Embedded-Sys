@@ -1,1 +1,1 @@
-cmd_/root/code/ULTRA/fork_join_dma_latency/modules.order := {   echo /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.ko; :; } | awk '!x[$$0]++' - > /root/code/ULTRA/fork_join_dma_latency/modules.order
+cmd_/home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/modules.order := {   echo /home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/dma_interrupt.ko; :; } | awk '!x[$$0]++' - > /home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/modules.order

@@ -1,1 +1,1 @@
-cmd_/root/code/ULTRA/fork_join_dma_latency/dma_interrupt.mod := { echo  /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.o;  echo; } > /root/code/ULTRA/fork_join_dma_latency/dma_interrupt.mod
+cmd_/home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/dma_interrupt.mod := { echo  /home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/dma_interrupt.o;  echo; } > /home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/dma_interrupt.mod

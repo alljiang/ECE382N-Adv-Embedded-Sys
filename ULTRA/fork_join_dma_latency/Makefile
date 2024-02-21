@@ -26,7 +26,7 @@ PWD   := $(shell pwd)
 # source and compile only the modules in the PWD (local) directory.
 
 default:
-	$(MAKE) -C $(KDIR) M=$(PWD) modules
+	$(MAKE) -j4 -C $(KDIR) M=$(PWD) modules
 	$(CC)  test_dma.c -o test_dma
 
 #csv:
@@ -34,7 +34,7 @@ default:
 
 gdb: 
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
-	$(CC)  test_dma.c -g -o test_dma_gdb
+	$(CC)  test_dma.c -g -DDEBUG -o test_dma_gdb
 	
 clean::
 	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe test_dma

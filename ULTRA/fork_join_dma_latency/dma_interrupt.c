@@ -45,13 +45,13 @@
 #define MODULE_VER "1.0"
 
 
-#define DMA_MAJOR 235                  // Need to mknod /dev/dma_int c 241 0
+#define DMA_MAJOR 235                  // Need to mknod /dev/dma_int c 235 0
 #define MODULE_NM "dma_interrupt"
 
-#undef DEBUG
-//#define DEBUG
-#undef DEBUG1
-//#define DEBUG1
+// #undef DEBUG
+#define DEBUG
+// #undef DEBUG1
+#define DEBUG1
 
 
 int             interruptcount  = 0;
@@ -183,7 +183,9 @@ struct file_operations dma_fops = {
     .write          =    NULL,
 };
 
-struct proc_ops proc_fops = {
+static const struct proc_ops proc_fops = {
+    // .proc_read = read_proc,
+    // .proc_write = write_proc,
 };
 
 /* =================== This struct is critical   =====================
@@ -203,7 +205,7 @@ struct proc_ops proc_fops = {
 
 
 static const struct of_device_id zynq_dma_of_match[] = {
-    { .compatible = "xlnx,axi-cdma" }, 
+    { .compatible = "xlnx,axi-cdma-4.1" }, 
     { /* end of table */ }
 };    
     
@@ -284,7 +286,7 @@ static int __init init_dma_int(void)
     int rv = 0;
     int err = 0;
     
-  //  platform_driver_unregister(&zynq_dma_driver);
+//    platform_driver_unregister(&zynq_dma_driver);
     
    
     printk("Ultra96 Interrupt Module\n");
@@ -310,7 +312,7 @@ static int __init init_dma_int(void)
     }
 
     // Request interrupt
-    //printk("Getting the interrupt %d\n", gic_interrupt);
+    printk("Getting the interrupt %d\n", gic_interrupt);
     
     rv = request_irq(gic_interrupt, 
                     (irq_handler_t) dma_int_handler, 

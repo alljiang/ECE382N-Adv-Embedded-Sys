@@ -1,1 +1,1 @@
-cmd_/root/code/ULTRA/fork_join_dma_latency/Module.symvers := sed 's/\.ko$$/\.o/' /root/code/ULTRA/fork_join_dma_latency/modules.order | scripts/mod/modpost    -o /root/code/ULTRA/fork_join_dma_latency/Module.symvers -e -i Module.symvers   -T -
+cmd_/home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/Module.symvers := sed 's/\.ko$$/\.o/' /home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/modules.order | scripts/mod/modpost    -o /home/ee382n/ECE382N-Adv-Embedded-Sys/ULTRA/fork_join_dma_latency/Module.symvers -e -i Module.symvers   -T -
