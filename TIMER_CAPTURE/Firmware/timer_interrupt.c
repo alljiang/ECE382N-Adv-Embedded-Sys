@@ -1,5 +1,5 @@
 /* ===================================================================
- *  dma_interrupt.c
+ *  timer_interrupt.c
  *
  *  AUTHOR:     Mark McDermott
  *
@@ -45,8 +45,8 @@
 #define MODULE_VER "1.0"
 
 
-#define DMA_MAJOR 235                  // Need to mknod /dev/dma_int c 235 0
-#define MODULE_NM "dma_interrupt"
+#define CAPTURE_TIMER_MAJOR 235                  // Need to mknod /dev/dma_int c 235 0
+#define MODULE_NM "capture_timer_interrupt"
 
 // #undef DEBUG
 #define DEBUG
@@ -61,7 +61,7 @@ char            *msg            = NULL;
 
 unsigned int    gic_interrupt;              // Interrupt number
 
-static struct fasync_struct *fasync_dma_queue ;
+static struct fasync_struct *fasync_capture_timer_queue ;
 
 /* ===================================================================
  * function: dma_int_handler
@@ -69,24 +69,25 @@ static struct fasync_struct *fasync_dma_queue ;
  
 //static irqreturn_t dma_int_handler(int irq, void *dev_id, struct pt_regs *regs)
 
-irq_handler_t dma_int_handler(int irq, void *dev_id, struct pt_regs *regs)
+irq_handler_t capture_timer_int_handler(int irq, void *dev_id, struct pt_regs *regs)
 {
   interruptcount++;
   
     #ifdef DEBUG1
-    printk(KERN_INFO "dma_int: Interrupt detected in kernel \n");  // DEBUG
-    #endif
+  printk(KERN_INFO
+	     "capture_timer_int: Interrupt detected in kernel \n");  // DEBUG
+#endif
   
     /* Signal the user application that an interupt occured */
-  
-    kill_fasync(&fasync_dma_queue, SIGIO, POLL_IN);
+
+  kill_fasync(&fasync_capture_timer_queue, SIGIO, POLL_IN);
 
   return  (irq_handler_t) IRQ_HANDLED;
 
 }
 
 
-static struct proc_dir_entry *proc_dma_int;
+static struct proc_dir_entry *proc_capture_timer_int;
 
 /* ===================================================================
 *    function: read_proc -- Example code  --- Not used
@@ -112,37 +113,37 @@ return count;
 }
 
 /* ===================================================================
- * function: dma_open     ---- Example code
+ * function: capture_timer_open     ---- Example code
  *
- * This function is called when the dma_int device is opened
+ * This function is called when the capture_timer_int device is opened
  *
  */
  
-static int dma_open (struct inode *inode, struct file *file) {
+static int capture_timer_open (struct inode *inode, struct file *file) {
 
     #ifdef DEBUG1
-        printk(KERN_INFO "dma_int: Inside dma_open \n");  // DEBUG
+        printk(KERN_INFO "capture_timer_int: Inside capture_timer_open \n");  // DEBUG
     #endif
     return 0;
 }
 
 /* ===================================================================
- * function: dma_release   ---- Example code
+ * function: capture_timer_release   ---- Example code
  *
- * This function is called when the dma_int device is
+ * This function is called when the capture_timer_int device is
  * released
  *
  */
  
-static int dma_release (struct inode *inode, struct file *file) {
+static int capture_timer_release (struct inode *inode, struct file *file) {
     #ifdef DEBUG1
-        printk(KERN_INFO "\ndma_int: Inside dma_release \n");  // DEBUG
+        printk(KERN_INFO "\ncapture_timer_int: Inside capture_timer_release \n");  // DEBUG
     #endif
     return 0;
 }
 
 /* ===================================================================
- * function: dma_fasync
+ * function: capture_timer_fasync
  *
  * This is invoked by the kernel when the user program opens this
  * input device and issues fcntl(F_SETFL) on the associated file
@@ -150,13 +151,13 @@ static int dma_release (struct inode *inode, struct file *file) {
  * kill_fasync(), a SIGIO is dispatched to the owning application.
  */
 
-static int dma_fasync (int fd, struct file *filp, int on)
+static int capture_timer_fasync (int fd, struct file *filp, int on)
 {
     #ifdef DEBUG
-    printk(KERN_INFO "\ndma_int: Inside dma_fasync \n");  // DEBUG
+    printk(KERN_INFO "\ncapture_timer_int: Inside capture_timer_fasync \n");  // DEBUG
     #endif
     
-    return fasync_helper(fd, filp, on, &fasync_dma_queue);
+    return fasync_helper(fd, filp, on, &fasync_capture_timer_queue);
 }; 
 
 /* ===================================================================
@@ -165,7 +166,7 @@ static int dma_fasync (int fd, struct file *filp, int on)
 *
 */
 
-struct file_operations dma_fops = {
+struct file_operations capture_timer_fops = {
     .owner          =    THIS_MODULE,
     .llseek         =    NULL,
     .read           =    NULL,
@@ -173,11 +174,11 @@ struct file_operations dma_fops = {
     .poll           =    NULL,
     .unlocked_ioctl =    NULL,
     .mmap           =    NULL,
-    .open           =    dma_open,
+    .open           =    capture_timer_open,
     .flush          =    NULL,
-    .release        =    dma_release,
+    .release        =    capture_timer_release,
     .fsync          =    NULL,
-    .fasync         =    dma_fasync,
+    .fasync         =    capture_timer_fasync,
     .lock           =    NULL,
     .read           =    NULL,
     .write          =    NULL,
@@ -203,23 +204,21 @@ static const struct proc_ops proc_fops = {
 		};
  */
 
+static const struct of_device_id zynq_capture_timer_of_match[] = {
+    {.compatible = "xlnx,Capture-Timer-1.0"},
+    {/* end of table */}};
 
-static const struct of_device_id zynq_dma_of_match[] = {
-    { .compatible = "xlnx,axi-cdma-4.1" }, 
-    { /* end of table */ }
-};    
-    
-MODULE_DEVICE_TABLE(of, zynq_dma_of_match);
+MODULE_DEVICE_TABLE(of, zynq_capture_timer_of_match);
 
 
 /* ===================================================================
  *
- * zynq_dma_probe - Initialization method for a zynq_dma device
+ * zynq_capture_timer_probe - Initialization method for a zynq_capture_timer device
  *
  * Return: 0 on success, negative error otherwise.
  */
 
-static int zynq_dma_probe(struct platform_device *pdev)
+static int zynq_capture_timer_probe(struct platform_device *pdev)
 {
     struct resource *res;
         
@@ -245,79 +244,79 @@ static int zynq_dma_probe(struct platform_device *pdev)
 
 /* ===================================================================
  *
- * zynq_dma_remove - Driver removal function
+ * zynq_capture_timer_remove - Driver removal function
  *
  * Return: 0 always
  */
  
-static int zynq_dma_remove(struct platform_device *pdev)
+static int zynq_capture_timer_remove(struct platform_device *pdev)
 {
-    //struct zynq_dma *dma = platform_get_drvdata(pdev)
+    //struct zynq_capture_timer *capture_timer = platform_get_drvdata(pdev)
 
     return 0;
 }
 
 /* ===================================================================
  *
- * zynq_dma  function
+ * zynq_capture_timer  function
  *
  * Return: 0 always
  */
  
-static struct platform_driver zynq_dma_driver = {
+static struct platform_driver zynq_capture_timer_driver = {
     .driver    = {
         .name = MODULE_NM,
-        .of_match_table = zynq_dma_of_match,
+        .of_match_table = zynq_capture_timer_of_match,
     },
-    .probe = zynq_dma_probe,
-    .remove = zynq_dma_remove,
+    .probe = zynq_capture_timer_probe,
+    .remove = zynq_capture_timer_remove,
 };
 
 
 /* ===================================================================
- * function: init_dma_int
+ * function: init_capture_timer_int
  *
- * This function creates the /proc directory entry dma_interrupt.
+ * This function creates the /proc directory entry capture_timer_interrupt.
  */
  
-static int __init init_dma_int(void)
+static int __init init_capture_timer_int(void)
 {
 
     int rv = 0;
     int err = 0;
     
-//    platform_driver_unregister(&zynq_dma_driver);
+//    platform_driver_unregister(&zynq_capture_timer_driver);
     
    
     printk("Ultra96 Interrupt Module\n");
     printk("Ultra96 Interrupt Driver Loading.\n");
-    printk("Using Major Number %d on %s\n", DMA_MAJOR, MODULE_NM); 
+    printk("Using Major Number %d on %s\n", CAPTURE_TIMER_MAJOR, MODULE_NM); 
 
-    err = platform_driver_register(&zynq_dma_driver);
+    err = platform_driver_register(&zynq_capture_timer_driver);
       
     if(err !=0) printk("Driver register error with number %d\n",err);       
     else        printk("Driver registered with no error\n");
     
-    if (register_chrdev(DMA_MAJOR, MODULE_NM, &dma_fops)) {
-        printk("dma_int: unable to get major %d. ABORTING!\n", DMA_MAJOR);
-    goto no_dma_interrupt;
+    if (register_chrdev(CAPTURE_TIMER_MAJOR, MODULE_NM, &capture_timer_fops)) {
+        printk("capture_timer_int: unable to get major %d. ABORTING!\n", CAPTURE_TIMER_MAJOR);
+    goto no_capture_timer_interrupt;
     }
 
-    proc_dma_int = proc_create("dma-interrupt", 0444, NULL, &proc_fops );
+    proc_capture_timer_int = proc_create("capture-timer-interrupt", 0444, NULL, &proc_fops );
     msg=kmalloc(GFP_KERNEL,10*sizeof(char));
     
-    if(proc_dma_int == NULL) {
-          printk("dma_int: create /proc entry returned NULL. ABORTING!\n");
-    goto no_dma_interrupt;
+    if(proc_capture_timer_int == NULL) {
+          printk("capture_timer_int: create /proc entry returned NULL. ABORTING!\n");
+    goto no_capture_timer_interrupt;
     }
 
     // Request interrupt
     printk("Getting the interrupt %d\n", gic_interrupt);
     
     rv = request_irq(gic_interrupt, 
-                    (irq_handler_t) dma_int_handler, 
+                    (irq_handler_t) capture_timer_int_handler, 
                      IRQF_TRIGGER_RISING,
-                     "cdma-controller", 
+                     "capture-timer-controller", 
                      NULL);
     
     printk("Got the interrupt %d\n", gic_interrupt);
@@ -326,7 +325,7 @@ static int __init init_dma_int(void)
   
     if ( rv ) {
         printk("Can't get interrupt %d\n", gic_interrupt);
-    goto no_dma_interrupt;
+    goto no_capture_timer_interrupt;
     }
 
     printk(KERN_INFO "%s %s Initialized\n",MODULE_NM, MODULE_VER);
@@ -335,29 +334,29 @@ static int __init init_dma_int(void)
 
     // remove the proc entry on error
     
-no_dma_interrupt:
+no_capture_timer_interrupt:
     kfree(msg);
-    unregister_chrdev(DMA_MAJOR, MODULE_NM);
-    platform_driver_unregister(&zynq_dma_driver);
-    remove_proc_entry("dma-interrupt", NULL);
+    unregister_chrdev(CAPTURE_TIMER_MAJOR, MODULE_NM);
+    platform_driver_unregister(&zynq_capture_timer_driver);
+    remove_proc_entry("capture-timer-interrupt", NULL);
     printk(KERN_INFO  "Exitting");
     return -EBUSY;
 };
 
 /* ===================================================================
- * function: cleanup_dma_interrupt
+ * function: cleanup_capture_timer_interrupt
  *
  * This function frees interrupt then removes the /proc directory entry 
- * dma_interrupt. 
+ * capture_timer_interrupt. 
  */
  
-static void __exit cleanup_dma_interrupt(void)
+static void __exit cleanup_capture_timer_interrupt(void)
 {
 
     free_irq(gic_interrupt,NULL);                   // Release IRQ    
-    unregister_chrdev(DMA_MAJOR, MODULE_NM);       // Release character device
-    platform_driver_unregister(&zynq_dma_driver);  // Unregister the driver
-    remove_proc_entry("dma-interrupt", NULL);      // Remove process entry
+    unregister_chrdev(CAPTURE_TIMER_MAJOR, MODULE_NM);       // Release character device
+    platform_driver_unregister(&zynq_capture_timer_driver);  // Unregister the driver
+    remove_proc_entry("capture-timer-interrupt", NULL);      // Remove process entry
     kfree(msg);
     printk(KERN_INFO "%s %s removed\n", MODULE_NM, MODULE_VER);
      
@@ -371,10 +370,10 @@ static void __exit cleanup_dma_interrupt(void)
  */
 
 
-module_init(init_dma_int);
-module_exit(cleanup_dma_interrupt);
+module_init(init_capture_timer_int);
+module_exit(cleanup_capture_timer_interrupt);
 
 MODULE_AUTHOR("Mark McDermott");
-MODULE_DESCRIPTION("dma-interrupt proc module");
+MODULE_DESCRIPTION("capture-timer-interrupt proc module");
 MODULE_LICENSE("GPL");
 

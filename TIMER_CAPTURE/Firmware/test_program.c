@@ -1,5 +1,6 @@
 
 #include <fcntl.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -70,6 +71,16 @@ uint32_t *pl_clk_reg;
 
 uint32_t *ocm;
 uint32_t *bram;
+
+void
+sighandler(int signo) {
+	printf("Interrupt received\n");
+	if (signo == SIGIO) {
+        printf("Interrupt received\n");
+    }
+
+	return; /* Return to main loop */
+}
 
 int
 map_regs() {
@@ -307,6 +318,57 @@ run_test_1() {
 	}
 }
 
+
+void
+run_test_2() {
+	printf("Interrupt: %d\n", timer_regs[1] & 0b1);
+
+    timer_regs[1] |= 0b1;
+
+	printf("Interrupt: %d\n", timer_regs[1] & 0b1);
+
+	timer_regs[1] &= ~0b1;
+}
+
+void
+setup_capture_timer_interrupt() {
+	struct sigaction action;
+	int fc, fd;
+
+	sigemptyset(&action.sa_mask);
+	sigaddset(&action.sa_mask, SIGIO);
+
+	action.sa_handler = sighandler;
+	action.sa_flags   = 0;
+
+	sigaction(SIGIO, &action, NULL);
+
+	fd = open("/dev/timer_int", O_RDWR);
+
+	if (fd == -1) {
+		perror("Unable to open /dev/timer_int");
+		exit(-1);
+	}
+
+	printf("/dev/timer_int opened successfully \n");
+
+	fc = fcntl(fd, F_SETOWN, getpid());
+
+	printf("Made it through fcntl\n");
+
+	if (fc == -1) {
+		perror("SETOWN failed\n");
+		exit(-1);
+	}
+
+	fc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_ASYNC);
+
+	if (fc == -1) {
+		perror("SETFL failed\n");
+		exit(-1);
+	}
+}
+
 int
 main() {
 	FILE *csv;
@@ -319,6 +381,7 @@ main() {
 	}
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
+    setup_capture_timer_interrupt();
 
 	// csv = fopen("timer_out.csv", "w+");
 	// fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
@@ -335,7 +398,8 @@ main() {
 	//     printf("OCM and BRAM are different\n");
 	// }
 
-	run_test_1();
+	// run_test_1();
+    run_test_2();
 
 	unmap_regs();
 }

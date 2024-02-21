@@ -27,5 +27,5 @@ MODULE_INFO(retpoline, "Y");
 
 MODULE_INFO(depends, "");
 
-MODULE_ALIAS("of:N*T*Cxlnx,axi-cdma-4.1");
-MODULE_ALIAS("of:N*T*Cxlnx,axi-cdma-4.1C*");
+MODULE_ALIAS("of:N*T*Cxlnx,Capture-Timer-1.0");
+MODULE_ALIAS("of:N*T*Cxlnx,Capture-Timer-1.0C*");
