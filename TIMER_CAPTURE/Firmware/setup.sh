@@ -4,18 +4,22 @@
 #    then rm /dev/timer_int
 # fi
 rm /dev/timer_int
+rm /dev/dma_int
 
 /bin/mknod /dev/timer_int c 235 0
+/bin/mknod /dev/dma_int c 236 0
 
 # if [ -f "/proc/timer-interrupt" ]; 
 #      then /sbin/rmmod timer_interrupt
 # fi
 /sbin/rmmod timer_interrupt
+/sbin/rmmod dma_interrupt
 
 sleep 3
 sync
     
 /sbin/insmod timer_interrupt.ko
+/sbin/insmod dma_interrupt.ko
 
 
 #/bin/pm 0x43c00000 0x55 > /dev/null
