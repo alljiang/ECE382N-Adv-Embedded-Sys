@@ -1,5 +1,6 @@
 
 #include <fcntl.h>
+#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,6 +16,7 @@
 #include "clock.h"
 
 #define NUM_WORDS_TO_TEST (0x1000 / 4)
+#define TEST_LOOPS 500
 
 enum memory_location { MEMORY_LOCATION_OCM, MEMORY_LOCATION_BRAM };
 
@@ -37,6 +39,19 @@ uint32_t *cmda_regs;
 
 uint32_t *ocm;
 uint32_t *bram;
+
+int history[TEST_LOOPS];
+int sample_count = 0;
+int interrupt_count;
+
+void
+sighandler(int signo) {
+	if (signo == SIGIO) {
+		interrupt_count++;
+	}
+
+	return; /* Return to main loop */
+}
 
 int
 map_regs() {
@@ -123,7 +138,8 @@ run_test_1() {
 
 	// 3. measure the time it takes to transfer
 	int timer_out = timer_regs[2];
-	printf("OCM -> BRAM timer_out: %d\n", timer_out);
+	// printf("OCM -> BRAM timer_out: %d\n", timer_out);
+	history[sample_count++] = timer_out;
 
 	// set timer_enable to 0
 	timer_regs[1] = timer_regs[1] & ~0b10;
@@ -147,7 +163,7 @@ run_test_1() {
 
 	// 5. measure the time it takes to transfer
 	timer_out = timer_regs[2];
-	printf("BRAM -> OCM timer_out: %d\n", timer_out);
+	// printf("BRAM -> OCM timer_out: %d\n", timer_out);
 
 	// set timer_enable to 0
 	timer_regs[1] = timer_regs[1] & ~0b10;
@@ -160,9 +176,46 @@ run_test_1() {
 
 	// 6. compare ocm
 	if (!memcmp(ocm, &ocm[2048], NUM_WORDS_TO_TEST)) {
-		printf("OCM -> BRAM -> OCM success\n");
+		// printf("OCM -> BRAM -> OCM success\n");
 	} else {
 		printf("OCM -> BRAM -> OCM fail\n");
+	}
+}
+
+void
+setup_dma_interrupt() {
+	struct sigaction action;
+	int fc, fd;
+
+	sigemptyset(&action.sa_mask);
+	sigaddset(&action.sa_mask, SIGIO);
+
+	action.sa_handler = sighandler;
+	action.sa_flags   = 0;
+
+	sigaction(SIGIO, &action, NULL);
+
+	fd = open("/dev/dma_int", O_RDWR);
+
+	if (fd == -1) {
+		perror("Unable to open /dev/dma_int");
+		exit(-1);
+	}
+
+	printf("/dev/dma_int opened successfully \n");
+
+	fc = fcntl(fd, F_SETOWN, getpid());
+
+	if (fc == -1) {
+		perror("SETOWN failed\n");
+		exit(-1);
+	}
+
+	fc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_ASYNC);
+
+	if (fc == -1) {
+		perror("SETFL failed\n");
+		exit(-1);
 	}
 }
 
@@ -178,23 +231,48 @@ main() {
 	}
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ, PL_CLK_250_MHZ);
+	// setup_dma_interrupt();
 
-	// csv = fopen("timer_out.csv", "w+");
-	// fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
-	// fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl],
-	// results.timer_write, results.timer_read);
+	for (int i = 0; i < TEST_LOOPS; i++) { run_test_1(); }
 
-	// transfer 4k bytes from OCM (0xFFFC_0000) to BRAM (0xC000_0000)
-	// printf("DMA started\n");
-	// wait_dma();
+	// calculate stats
+	int min = history[0];
+	int max = history[0];
+	int sum = 0;
+	for (int i = 0; i < TEST_LOOPS; i++) {
+		if (history[i] < min) {
+			min = history[i];
+		}
+		if (history[i] > max) {
+			max = history[i];
+		}
+		sum += history[i];
+	}
 
-	// if (memcmp(ocm, bram, NUM_WORDS_TO_TEST) == 0) {
-	// 	printf("OCM and BRAM are the same\n");
-	// } else {
-	//     printf("OCM and BRAM are different\n");
-	// }
+	float stdev = 0;
+	float mean  = (float) sum / TEST_LOOPS;
+	for (int i = 0; i < TEST_LOOPS; i++) {
+		stdev += (history[i] - mean) * (history[i] - mean);
+	}
+	stdev = sqrt(stdev / (TEST_LOOPS - 1));
 
-	run_test_1();
+	int proc_interrupts_count = 0;
+	int interrupt_number;
+
+	FILE *proc_interrupts =
+	    popen("cat /proc/interrupts | grep xilinx-dma-controller", "r");
+	fscanf(proc_interrupts, "%d", &interrupt_number);
+	fscanf(proc_interrupts, "%*s %d", &proc_interrupts_count);
+	pclose(proc_interrupts);
+
+	printf("********************************\n");
+	printf("Minimum Latency: %d\n", min);
+	printf("Maximum Latency: %d\n", max);
+	printf("Average Latency: %.2f\n", mean);
+	printf("Standard Deviation: %.2f\n", stdev);
+	printf("Number of samples: %d\n", interrupt_count);
+	printf("Interrupt %d count: %d\n", interrupt_number, proc_interrupts_count);
+	printf("********************************\n");
 
 	unmap_regs();
 }

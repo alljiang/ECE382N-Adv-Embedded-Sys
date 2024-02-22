@@ -163,9 +163,11 @@ main() {
 	stdev = sqrt(stdev / (interrupt_count - 1));
 
 	int proc_interrupts_count = 0;
-	// get output of cat /proc/interrupts | grep capture-timer
+    int interrupt_number;
+
 	FILE *proc_interrupts =
 	    popen("cat /proc/interrupts | grep capture-timer", "r");
+	fscanf(proc_interrupts, "%d", &interrupt_number);
 	fscanf(proc_interrupts, "%*s %d", &proc_interrupts_count);
 	pclose(proc_interrupts);
 
@@ -175,7 +177,7 @@ main() {
 	printf("Average Latency: %.2f\n", mean);
 	printf("Standard Deviation: %.2f\n", stdev);
 	printf("Number of samples: %d\n", interrupt_count);
-	printf("/proc/interrupts count: %d\n", proc_interrupts_count);
+	printf("Interrupt %d count: %d\n", interrupt_number, proc_interrupts_count);
 	printf("********************************\n");
 
 	unmap_regs();
