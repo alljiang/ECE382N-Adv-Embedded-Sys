@@ -204,7 +204,7 @@ static const struct proc_ops proc_fops = {
  */
 
 static const struct of_device_id zynq_dma_of_match[] = {
-    {.compatible = "xlnx,axi-cdma-4.1"},
+    {.compatible = "xlnx,axi-cdma"},
     {/* end of table */}};
 
 MODULE_DEVICE_TABLE(of, zynq_dma_of_match);

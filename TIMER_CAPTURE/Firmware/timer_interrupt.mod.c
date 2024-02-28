@@ -27,5 +27,5 @@ MODULE_INFO(retpoline, "Y");
 
 MODULE_INFO(depends, "");
 
-MODULE_ALIAS("of:N*T*Cxlnx,Capture-Timer-1.0");
-MODULE_ALIAS("of:N*T*Cxlnx,Capture-Timer-1.0C*");
+MODULE_ALIAS("of:N*T*Cxlnx,Capture-Timer");
+MODULE_ALIAS("of:N*T*Cxlnx,Capture-TimerC*");

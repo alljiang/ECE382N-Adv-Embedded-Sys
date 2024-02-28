@@ -205,7 +205,7 @@ static const struct proc_ops proc_fops = {
  */
 
 static const struct of_device_id zynq_capture_timer_of_match[] = {
-    {.compatible = "xlnx,Capture-Timer-1.0"},
+    {.compatible = "xlnx,Capture-Timer"},
     {/* end of table */}};
 
 MODULE_DEVICE_TABLE(of, zynq_capture_timer_of_match);

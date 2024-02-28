@@ -231,7 +231,7 @@ main() {
 	}
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ, PL_CLK_250_MHZ);
-	// setup_dma_interrupt();
+	setup_dma_interrupt();
 
 	for (int i = 0; i < TEST_LOOPS; i++) { run_test_1(); }
 
@@ -260,7 +260,7 @@ main() {
 	int interrupt_number;
 
 	FILE *proc_interrupts =
-	    popen("cat /proc/interrupts | grep xilinx-dma-controller", "r");
+	    popen("cat /proc/interrupts | grep cdma-controller", "r");
 	fscanf(proc_interrupts, "%d", &interrupt_number);
 	fscanf(proc_interrupts, "%*s %d", &proc_interrupts_count);
 	pclose(proc_interrupts);

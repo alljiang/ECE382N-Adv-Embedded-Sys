@@ -30,6 +30,20 @@ int interrupt_count = 0;
 
 int history[NUM_TEST_SAMPLES];
 
+enum CDMA_regs {
+	CDMACR,
+	CDMASR,
+	CURDESC_PNTR,
+	CURDESC_PNTR_MSB,
+	TAILDESC_PNTR,
+	TAILDESC_PNTR_MSB,
+	SA,
+	SA_MSB,
+	DA,
+	DA_MSB,
+	BTT
+};
+
 void
 sighandler(int signo) {
 	if (signo == SIGIO) {
@@ -130,15 +144,19 @@ main() {
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ, PL_CLK_250_MHZ);
 	setup_capture_timer_interrupt();
+    
+	// clear CDMACR
+	cmda_regs[CDMACR] = 0;
 
 	for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
 		timer_regs[1] &= ~0b11;
 		usleep(1);
 		timer_regs[1] |= 0b11;
+		usleep(1);
 
 		wait_timer();
 
-		// printf("Iteration %d: %d\n", i, interrupt_timer_out);
+		printf("Iteration %d: %d\n", i, interrupt_timer_out);
 	}
 
 	// calculate stats

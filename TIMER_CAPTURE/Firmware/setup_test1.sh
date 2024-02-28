@@ -6,7 +6,6 @@
 rm /dev/timer_int
 rm /dev/dma_int
 
-/bin/mknod /dev/timer_int c 235 0
 /bin/mknod /dev/dma_int c 236 0
 
 # if [ -f "/proc/timer-interrupt" ]; 
@@ -18,7 +17,6 @@ rm /dev/dma_int
 sleep 3
 sync
     
-/sbin/insmod timer_interrupt.ko
 /sbin/insmod dma_interrupt.ko
 
 

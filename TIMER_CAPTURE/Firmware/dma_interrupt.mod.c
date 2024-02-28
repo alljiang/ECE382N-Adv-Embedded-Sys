@@ -27,5 +27,5 @@ MODULE_INFO(retpoline, "Y");
 
 MODULE_INFO(depends, "");
 
-MODULE_ALIAS("of:N*T*Cxlnx,axi-cdma-channel");
-MODULE_ALIAS("of:N*T*Cxlnx,axi-cdma-channelC*");
+MODULE_ALIAS("of:N*T*Cxlnx,axi-cdma");
+MODULE_ALIAS("of:N*T*Cxlnx,axi-cdmaC*");
