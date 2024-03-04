@@ -6,12 +6,14 @@ file = open("data.txt", "r")
 lines = file.readlines()
 file.close()
 
-data = []
+min_dat = []
+max_dat = []
 
 for line in lines:
-    data.append(line.split(' ')[-1])
-
-print(data)
+    split = line.split(' ')
+    min_dat.append(split[0])
+    max_dat.append(split[1])
 
 # scatter plot
 plt.figure()
+

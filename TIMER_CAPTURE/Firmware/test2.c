@@ -144,59 +144,64 @@ main() {
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ, PL_CLK_250_MHZ);
 	setup_capture_timer_interrupt();
-    
-	// clear CDMACR
-	cmda_regs[CDMACR] = 0;
 
-	for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
-		timer_regs[1] &= ~0b11;
-		usleep(1);
-		timer_regs[1] |= 0b11;
-		usleep(1);
+	for (int x = 0; x < 3000; x++) {
+		interrupt_count = 0;
+		// clear CDMACR
+		cmda_regs[CDMACR] = 0;
 
-		wait_timer();
+		for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
+			timer_regs[1] &= ~0b11;
+			usleep(1);
+			timer_regs[1] |= 0b11;
+			usleep(1);
 
-		printf("Iteration %d: %d\n", i, interrupt_timer_out);
-	}
+			wait_timer();
 
-	// calculate stats
-	int min = history[0];
-	int max = history[0];
-	int sum = 0;
-	for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
-		if (history[i] < min) {
-			min = history[i];
+			// printf("Iteration %d: %d\n", i, interrupt_timer_out);
 		}
-		if (history[i] > max) {
-			max = history[i];
+
+		// calculate stats
+		int min = history[0];
+		int max = history[0];
+		int sum = 0;
+		for (int i = 0; i < NUM_TEST_SAMPLES; i++) {
+			if (history[i] < min) {
+				min = history[i];
+			}
+			if (history[i] > max) {
+				max = history[i];
+			}
+			sum += history[i];
 		}
-		sum += history[i];
+
+		float stdev = 0;
+		float mean  = (float) sum / interrupt_count;
+		for (int i = 0; i < interrupt_count; i++) {
+			stdev += (history[i] - mean) * (history[i] - mean);
+		}
+		stdev = sqrt(stdev / (interrupt_count - 1));
+
+		int proc_interrupts_count = 0;
+		int interrupt_number;
+
+		// FILE *proc_interrupts =
+		//     popen("cat /proc/interrupts | grep capture-timer", "r");
+		// fscanf(proc_interrupts, "%d", &interrupt_number);
+		// fscanf(proc_interrupts, "%*s %d", &proc_interrupts_count);
+		// pclose(proc_interrupts);
+
+		printf("%d %d\n", min, max);
 	}
 
-	float stdev = 0;
-	float mean  = (float) sum / interrupt_count;
-	for (int i = 0; i < interrupt_count; i++) {
-		stdev += (history[i] - mean) * (history[i] - mean);
-	}
-	stdev = sqrt(stdev / (interrupt_count - 1));
-
-	int proc_interrupts_count = 0;
-    int interrupt_number;
-
-	FILE *proc_interrupts =
-	    popen("cat /proc/interrupts | grep capture-timer", "r");
-	fscanf(proc_interrupts, "%d", &interrupt_number);
-	fscanf(proc_interrupts, "%*s %d", &proc_interrupts_count);
-	pclose(proc_interrupts);
-
-	printf("********************************\n");
-	printf("Minimum Latency: %d\n", min);
-	printf("Maximum Latency: %d\n", max);
-	printf("Average Latency: %.2f\n", mean);
-	printf("Standard Deviation: %.2f\n", stdev);
-	printf("Number of samples: %d\n", interrupt_count);
-	printf("Interrupt %d count: %d\n", interrupt_number, proc_interrupts_count);
-	printf("********************************\n");
+	// printf("********************************\n");
+	// printf("Minimum Latency: %d\n", min);
+	// printf("Maximum Latency: %d\n", max);
+	// printf("Average Latency: %.2f\n", mean);
+	// printf("Standard Deviation: %.2f\n", stdev);
+	// printf("Number of samples: %d\n", interrupt_count);
+	// printf("Interrupt %d count: %d\n", interrupt_number,
+	// proc_interrupts_count); printf("********************************\n");
 
 	unmap_regs();
 }

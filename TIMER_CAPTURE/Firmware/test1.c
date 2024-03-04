@@ -135,6 +135,8 @@ run_test_1() {
 	    (uint32_t *) 0xFFFC0000, (uint32_t *) 0xC0000000, NUM_WORDS_TO_TEST);
 
 	wait_timer();
+    wait_dma();
+    for (volatile int i = 0; i < 100000; i++) {}
 
 	// 3. measure the time it takes to transfer
 	int timer_out = timer_regs[2];
