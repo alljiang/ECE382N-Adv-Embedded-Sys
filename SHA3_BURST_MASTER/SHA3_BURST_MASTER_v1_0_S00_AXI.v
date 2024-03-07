@@ -1,5 +1,5 @@
 
-`timescale 1 ns / 1 ps
+`timescale/ 1 ns / 1 ps
 
 	module SHA3_BURST_MASTER_v1_0_S00_AXI #
 	(

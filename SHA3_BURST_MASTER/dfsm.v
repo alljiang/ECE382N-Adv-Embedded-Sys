@@ -28,7 +28,13 @@ module dfsm
               
  // NEED to I/O to BURST MASTER
  
- 
+ /*
+
+    1. Fetch 2 64-bit data from OCM through BURST MASTER 
+    2. Send 1 64-bit data to keccak unit
+    3. 
+
+ */
  
  
  endmodule
