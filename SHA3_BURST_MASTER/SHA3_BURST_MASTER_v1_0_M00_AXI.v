@@ -751,7 +751,7 @@
 	      end                                                                                                   
 	    else                                                                                                    
 	      begin                                                                                                 
-	                                                                                                            
+            // alljiang
 	        // state transition                                                                                 
 	        case (mst_exec_state)                                                                               
 	                                                                                                            
@@ -760,36 +760,12 @@
 	            // number of clock cycles.                                                                      
 	            if ( init_txn_pulse == 1'b1)                                                      
 	              begin                                                                                         
-	                mst_exec_state  <= INIT_WRITE;                                                              
+	                mst_exec_state  <= INIT_READ;                                                              
 	                ERROR <= 1'b0;
-	                compare_done <= 1'b0;
 	              end                                                                                           
 	            else                                                                                            
 	              begin                                                                                         
 	                mst_exec_state  <= IDLE;                                                            
-	              end                                                                                           
-	                                                                                                            
-	          INIT_WRITE:                                                                                       
-	            // This state is responsible to issue start_single_write pulse to                               
-	            // initiate a write transaction. Write transactions will be                                     
-	            // issued until burst_write_active signal is asserted.                                          
-	            // write controller                                                                             
-	            if (writes_done)                                                                                
-	              begin                                                                                         
-	                mst_exec_state <= INIT_READ;//                                                              
-	              end                                                                                           
-	            else                                                                                            
-	              begin                                                                                         
-	                mst_exec_state  <= INIT_WRITE;                                                              
-	                                                                                                            
-	                if (~axi_awvalid && ~start_single_burst_write && ~burst_write_active)                       
-	                  begin                                                                                     
-	                    start_single_burst_write <= 1'b1;                                                       
-	                  end                                                                                       
-	                else                                                                                        
-	                  begin                                                                                     
-	                    start_single_burst_write <= 1'b0; //Negate to generate a pulse                          
-	                  end                                                                                       
 	              end                                                                                           
 	                                                                                                            
 	          INIT_READ:                                                                                        
@@ -799,7 +775,7 @@
 	            // read controller                                                                              
 	            if (reads_done)                                                                                 
 	              begin                                                                                         
-	                mst_exec_state <= INIT_COMPARE;                                                             
+	                mst_exec_state <= IDLE;                                                             
 	              end                                                                                           
 	            else                                                                                            
 	              begin                                                                                         
@@ -814,21 +790,6 @@
 	                   start_single_burst_read <= 1'b0; //Negate to generate a pulse                            
 	                 end                                                                                        
 	              end                                                                                           
-	                                                                                                            
-	          INIT_COMPARE:                                                                                     
-	            // This state is responsible to issue the state of comparison                                   
-	            // of written data with the read data. If no error flags are set,                               
-	            // compare_done signal will be asseted to indicate success.                                     
-	            //if (~error_reg)                                                                               
-	            begin                                                                                           
-	              ERROR <= error_reg;
-	              mst_exec_state <= IDLE;                                                               
-	              compare_done <= 1'b1;                                                                         
-	            end                                                                                             
-	          default :                                                                                         
-	            begin                                                                                           
-	              mst_exec_state  <= IDLE;                                                              
-	            end                                                                                             
 	        endcase                                                                                             
 	      end                                                                                                   
 	  end //MASTER_EXECUTION_PROC                                                                               
