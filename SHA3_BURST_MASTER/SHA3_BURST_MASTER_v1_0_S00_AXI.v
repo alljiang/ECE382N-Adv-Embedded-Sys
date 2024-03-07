@@ -698,11 +698,11 @@
           // Address decoding for reading registers
           case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
             5'h00  : reg_data_out <= slv_reg0;                 // Control register
-            5'h01  : reg_data_out <= {SHA3_DONE,
+            5'h01  : reg_data_out <= {28'h0,
+                                      SHA3_DONE,
                                       SHA3_START,
                                       IN_READY,
-                                      IS_LAST,
-                                      21'h0};                  
+                                      IS_LAST};                  
             5'h02  : reg_data_out <= slv_reg2;                
             5'h03  : reg_data_out <= slv_reg3;        
             5'h04  : reg_data_out <= slv_reg4;     
