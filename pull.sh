@@ -11,6 +11,8 @@
 cp /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/hdl/SHA3_BURST_MASTER_v1_0_M00_AXI.v SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0_M00_AXI.v
 cp /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/hdl/SHA3_BURST_MASTER_v1_0_S00_AXI.v SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0_S00_AXI.v
 cp /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/hdl/SHA3_BURST_MASTER_v1_0.v SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0.v
+cp /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/keccak.v SHA3_BURST_MASTER/keccak.v
+cp /misc/scratch/ajiang1/Lab3/SHA3_2022.2/SHA3_BURST_MASTER_v1_0.v SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0.v
 cp /misc/scratch/ajiang1/Lab3/SHA3_2022.2/dfsm.v SHA3_BURST_MASTER/dfsm.v
 
 cp /misc/scratch/ajiang1/Lab3/ip_repo/capture_timer_1.0/hdl/capture_timer_v1_0_S00_AXI.v capture_timer/capture_timer_v1_0_S00_AXI.v
