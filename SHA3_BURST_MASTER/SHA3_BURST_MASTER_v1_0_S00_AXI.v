@@ -774,48 +774,48 @@
     wire [63:0] fifo_read_data;
     wire fifo_empty;
 
-   fifo Bus_FIFO (
-                    .clk(keccak_clk),
-                    .rst(keccak_reset | keccak_rst),
-                    .write_data(ocm_data_out),
-                    .write_en(bus_data_valid),
-                    .read(fifo_read_en),
-                    .read_data(fifo_read_data),
-                    .fifo_full(),
-                    .fifo_half_full(~dfsm_read_ready),
-                    .fifo_empty(fifo_empty)
-                );
+    Bus_FIFO #(64) bus_fifo (
+        .clk(keccak_clk),
+        .rst(keccak_reset | keccak_rst),
+        .write_data(ocm_data_out),
+        .write_en(bus_data_valid),
+        .read(fifo_read_en),
+        .read_data(fifo_read_data),
+        // .fifo_full(),
+        .fifo_half_full(~dfsm_read_ready),
+        .fifo_empty(fifo_empty)
+    );
 
    keccak KECCAK_TOP( 
-                    .clk(keccak_clk),
-                    .reset(keccak_reset | keccak_rst),
-                    .in(keccak_in),
-                    .in_ready(IN_READY),
-                    .is_last(IS_LAST),
-                    .byte_num(BYTE_NUM),
-                    .buffer_full(BUFFER_FULL),
-                    .out(keccak_hash_reg),
-                    .out_ready(SHA3_DONE)
+        .clk(keccak_clk),
+        .reset(keccak_reset | keccak_rst),
+        .in(keccak_in),
+        .in_ready(IN_READY),
+        .is_last(IS_LAST),
+        .byte_num(BYTE_NUM),
+        .buffer_full(BUFFER_FULL),
+        .out(keccak_hash_reg),
+        .out_ready(SHA3_DONE)
 
-                    .fifo_read_en(fifo_read_en),
-                    .fifo_read_data(fifo_read_data),
-                    .fifo_empty(fifo_empty)
-                );
+        .fifo_read_en(fifo_read_en),
+        .fifo_read_data(fifo_read_data),
+        .fifo_empty(fifo_empty)
+    );
      
      
     dfsm        dfsm(
-                    .clk(keccak_clk),
-                    .reset(keccak_reset | keccak_rst),
-                    .in(keccak_in),                     // Output to Keccak
-                    .in_ready(IN_READY),                // Output to Keccak
-                    .is_last(IS_LAST),                  // Output to Keccak
-                    .byte_num(BYTE_NUM),                // Output to Keccak
-                    .buffer_full(BUFFER_FULL)           // Input to DFSM
-                    
-                    // ADD control signals to BURST_MASTER
-                    // ADD status signals from BURST_MASTER
-  
-                    );
+        .clk(keccak_clk),
+        .reset(keccak_reset | keccak_rst),
+        .in(keccak_in),                     // Output to Keccak
+        .in_ready(IN_READY),                // Output to Keccak
+        .is_last(IS_LAST),                  // Output to Keccak
+        .byte_num(BYTE_NUM),                // Output to Keccak
+        .buffer_full(BUFFER_FULL)           // Input to DFSM
+        
+        // ADD control signals to BURST_MASTER
+        // ADD status signals from BURST_MASTER
+
+    );
     
     
     
