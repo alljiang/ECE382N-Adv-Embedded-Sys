@@ -15,7 +15,12 @@
 	)
 	(
 		// Users to add ports here
-		input     wire                txn_done,
+
+        input wire [127:0] ocm_data_out,
+        input wire bus_data_valid,
+        output wire dfsm_read_ready,
+        output wire [31:0] read_addr_offset,
+
 		output    wire                SHA3_DONE,        // Output from SHA3 Accelerator
 		output    wire                SHA3_START,       // Output from SHA3 Accelerator
 
@@ -764,6 +769,23 @@
    assign           NUMBER_BYTES    = slv_reg2[15:0];
    assign           START_ADDRESS   = slv_reg3[31:0];
 
+
+    wire fifo_read_en;     // dfsm -> fifo
+    wire [63:0] fifo_read_data;
+    wire fifo_empty;
+
+   fifo Bus_FIFO (
+                    .clk(keccak_clk),
+                    .rst(keccak_reset | keccak_rst),
+                    .write_data(ocm_data_out),
+                    .write_en(bus_data_valid),
+                    .read(fifo_read_en),
+                    .read_data(fifo_read_data),
+                    .fifo_full(),
+                    .fifo_half_full(~dfsm_read_ready),
+                    .fifo_empty(fifo_empty)
+                );
+
    keccak KECCAK_TOP( 
                     .clk(keccak_clk),
                     .reset(keccak_reset | keccak_rst),
@@ -774,6 +796,10 @@
                     .buffer_full(BUFFER_FULL),
                     .out(keccak_hash_reg),
                     .out_ready(SHA3_DONE)
+
+                    .fifo_read_en(fifo_read_en),
+                    .fifo_read_data(fifo_read_data),
+                    .fifo_empty(fifo_empty)
                 );
      
      

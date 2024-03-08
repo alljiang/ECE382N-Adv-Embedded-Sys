@@ -112,12 +112,20 @@
 // Instantiation of Axi Bus Interface S00_AXI
 // ------------------------------------------------------------------------------------
 
+    wire [127:0] ocm_data_out;      // master -> slave
+    wire bus_data_valid;            // master -> slave
+    wire dfsm_read_ready;           // slave -> master
+    wire [31:0] read_addr_offset;   // slave -> master
+
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) SHA3_BURST_MASTER_v1_0_S00_AXI_inst (
-	    .txn_done(txn_done),                       // Remove 
-	    
+        .ocm_data_out(ocm_data_out),
+        .bus_data_valid(bus_data_valid),
+        .dfsm_read_ready(dfsm_read_ready),
+        .read_addr_offset(read_addr_offset),
+
 	    .SHA3_DONE(SHA3_DONE),
 	    .SHA3_START(SHA3_START),
 	    
@@ -160,9 +168,13 @@
 		.C_M_AXI_RUSER_WIDTH(C_M00_AXI_RUSER_WIDTH),
 		.C_M_AXI_BUSER_WIDTH(C_M00_AXI_BUSER_WIDTH)
 	) SHA3_BURST_MASTER_v1_0_M00_AXI_inst (
-		//.INIT_AXI_TXN(m00_axi_init_axi_txn),
-		.txn_done(txn_done),
-		//.ERROR(m00_axi_error),
+		.INIT_AXI_TXN(m00_axi_init_txn),
+        .ocm_data_out(ocm_data_out),
+        .bus_data_valid(bus_data_valid),
+        .dfsm_read_ready(dfsm_read_ready),
+        .read_addr_offset(read_addr_offset),
+        
+		.ERROR(m00_axi_error),
 		.M_AXI_ACLK(m00_axi_aclk),
 		.M_AXI_ARESETN(m00_axi_aresetn),
 		.M_AXI_AWID(m00_axi_awid),

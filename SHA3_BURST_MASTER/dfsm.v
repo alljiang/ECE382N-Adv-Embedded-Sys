@@ -14,6 +14,11 @@ module dfsm (
 
     // burst master I/O
     
+
+    output reg         fifo_read_en;
+    input      [63:0] fifo_read_data;
+    output            fifo_empty;
+    
 );
 
  // NEED to I/O to BURST MASTER
