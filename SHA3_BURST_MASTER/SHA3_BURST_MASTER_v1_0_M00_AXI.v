@@ -33,6 +33,10 @@
 		// Users to add ports here
 		
 		// ADD signals to/from DFSM
+        output wire [127:0] ocm_data_out,
+        output wire bus_data_valid,
+        input wire dfsm_read_ready,
+        input wire [31:0] read_addr_offset,
 
 		// User ports ends
 		
@@ -46,7 +50,7 @@
 		output reg  ERROR,
 		// Global Clock Signal.
 		input wire  M_AXI_ACLK,
-		// Global Reset Singal. This Signal is Active Low
+		// Global Reset Signal. This Signal is Active Low
 		input wire  M_AXI_ARESETN,
 		// Master Interface Write Address ID
 		output wire [C_M_AXI_ID_WIDTH-1 : 0] M_AXI_AWID,
@@ -290,6 +294,9 @@
 	assign burst_size_bytes	= C_M_AXI_BURST_LEN * C_M_AXI_DATA_WIDTH/8;
 	assign init_txn_pulse	= (!init_txn_ff2) && init_txn_ff;
 
+    // alljiang
+    assign bus_data_valid = M_AXI_RVALID;
+    assign ocm_data_out = M_AXI_RDATA;
 
 	//Generate a pulse to initiate AXI transaction.
 	always @(posedge M_AXI_ACLK)										      
@@ -564,7 +571,8 @@
 	//--------------------------------
 
 	 // Forward movement occurs when the channel is valid and ready   
-	  assign rnext = M_AXI_RVALID && axi_rready;                            
+     
+	  assign rnext = M_AXI_RVALID && axi_rready && dfsm_read_ready; // alljiang
 	                                                                        
 	                                                                        
 	// Burst length counter. Uses extra counter register bit to indicate    
