@@ -10,7 +10,7 @@ module Bus_FIFO #(parameter depth=32)
     output [63:0] read_data,
     output fifo_full,
     output fifo_half_full,
-    output fifo_empty,
+    output fifo_empty
 );
     
     reg [63:0] memory[depth:0];

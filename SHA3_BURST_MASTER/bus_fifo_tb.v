@@ -43,7 +43,7 @@ initial begin
     rst = 1;
     write_en = 0;
     write_data = 128'b0;
-    read = 0;
+    read_en = 0;
     
     #5
     rst = 0;
@@ -65,7 +65,7 @@ initial begin
     `assert(fifo_empty, 1'b0)
     `assert(fifo_full, 1'b1)
 
-    write_en = 0; read = 1;
+    write_en = 0; read_en = 1;
     `assert(read_data, 32'h0) #1;
     `assert(fifo_full, 1'b0)
     `assert(read_data, 32'h1) #1;
@@ -90,7 +90,7 @@ initial begin
     write_en = 1;
     write_data = `combine(128'h1, 128'h0); #1;
 
-    read = 1;
+    read_en = 1;
     write_data = `combine(128'h3, 128'h2);
     `assert(read_data, 32'h0) #1;
 
@@ -98,7 +98,7 @@ initial begin
     `assert(read_data, 32'h1) #1;
     `assert(read_data, 32'h2) #1;
     `assert(read_data, 32'h3) #1;
-    read = 0;
+    read_en = 0;
 
     `assert(fifo_empty, 1'b1)
 

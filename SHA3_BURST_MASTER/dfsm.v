@@ -13,9 +13,9 @@ module dfsm (
     input buffer_full,
 
     // burst master I/O
-    output reg fifo_read_en;
-    input [63:0] fifo_read_data;
-    output fifo_empty;
+    output reg fifo_read_en,
+    input [63:0] fifo_read_data,
+    output fifo_empty
     
 );
 
