@@ -21,7 +21,7 @@ wire fifo_full;
 wire fifo_empty;
 wire fifo_half_full;
 
-Bus_FIFO #(8) bus_fifo (
+Bus_FIFO #(16) bus_fifo (
     .clk(clk),
     .rst(rst),
     .write_data(write_data),

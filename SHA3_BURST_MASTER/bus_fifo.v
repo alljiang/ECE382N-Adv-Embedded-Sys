@@ -13,7 +13,7 @@ module Bus_FIFO #(parameter depth=32)
     output fifo_empty
 );
     
-    reg [63:0] memory[depth:0];
+    reg [63:0] memory[depth-1:0];
     reg [$clog2(depth)-1:0] write_ptr;
     reg [$clog2(depth)-1:0] read_ptr;
     reg [$clog2(depth):0] count;
@@ -57,7 +57,7 @@ module Bus_FIFO #(parameter depth=32)
         else begin
             if (write_en & !fifo_full) begin
                 write_ptr <= write_ptr + 1;
-                // memory[write_ptr] <= write_data;
+                 memory[write_ptr] <= write_data;
             end
         end
     
