@@ -31,9 +31,9 @@ module Bus_FIFO #(parameter depth=32)
             case ({write_en, read})
             // assume FIFO will never be read while empty or written while full
                 2'b00: count <= count;
-                2'b01: count <= count - 1'b1;
-                2'b10: count <= count + 1'b2;
-                2'b11: count <= count + 1'b1;
+                2'b01: count <= count - 1;
+                2'b10: count <= count + 2;
+                2'b11: count <= count + 1;
             endcase
         end
     end
