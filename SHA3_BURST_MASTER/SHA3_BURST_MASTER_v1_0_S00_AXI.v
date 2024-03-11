@@ -779,7 +779,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .rst(keccak_reset | keccak_rst),
         .write_data(ocm_data_out),
         .write_en(bus_data_valid),
-        .read(fifo_read_en),
+        .read_en(fifo_read_en),
         .read_data(fifo_read_data),
         // .fifo_full(),
         .fifo_half_full(~dfsm_read_ready),

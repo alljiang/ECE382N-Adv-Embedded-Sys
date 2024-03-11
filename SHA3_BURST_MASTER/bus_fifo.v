@@ -6,8 +6,8 @@ module Bus_FIFO #(parameter depth=32)
     input rst,
     input write_en,
     input [127:0] write_data,
-    input read,
-    output [63:0] read_data,
+    input read_en,
+    output reg [63:0] read_data,
     output fifo_full,
     output fifo_half_full,
     output fifo_empty
@@ -21,14 +21,18 @@ module Bus_FIFO #(parameter depth=32)
     assign fifo_full = count == depth;
     assign fifo_half_full = count >= (depth >> 1);
     assign fifo_empty = count == 0;
-    assign read_data[63:0] = memory[read_ptr];
+
+    initial begin
+        // all 1s
+        read_data = 64'hFFFFFFFFFFFFFFFF;
+    end
     
     always @(posedge clk) begin
         if (rst) begin
             count <= 0;
         end
         else begin
-            case ({write_en, read})
+            case ({write_en, read_en})
             // assume FIFO will never be read while empty or written while full
                 2'b00: count <= count;
                 2'b01: count <= count - 1;
@@ -43,8 +47,9 @@ module Bus_FIFO #(parameter depth=32)
             read_ptr <= 0;
         end
         else begin
-            if (read & !fifo_empty) begin
+            if (read_en & !fifo_empty) begin
                 read_ptr <= read_ptr + 1'b1;
+                read_data[63:0] <= memory[read_ptr];
             end
         end
     
@@ -56,8 +61,9 @@ module Bus_FIFO #(parameter depth=32)
         end
         else begin
             if (write_en & !fifo_full) begin
-                write_ptr <= write_ptr + 1;
-                 memory[write_ptr] <= write_data;
+                write_ptr <= write_ptr + 2;
+                memory[write_ptr] <= write_data[63:0];
+                memory[write_ptr+1] <= write_data[127:64];
             end
         end
     
