@@ -769,41 +769,19 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
    assign           NUMBER_BYTES    = slv_reg2[15:0];
    assign           START_ADDRESS   = slv_reg3[31:0];
 
-
-    wire fifo_read_en;     // dfsm -> fifo
-    wire [63:0] fifo_read_data;
-    wire fifo_empty;
-
-    Bus_FIFO #(64) bus_fifo (
-        .clk(keccak_clk),
-        .rst(keccak_reset | keccak_rst),
-        .write_data(ocm_data_out),
-        .write_en(bus_data_valid),
-        .read_en(fifo_read_en),
-        .read_data(fifo_read_data),
-        // .fifo_full(),
-        .fifo_half_full(~dfsm_read_ready),
-        .fifo_empty(fifo_empty)
-    );
-
-   keccak KECCAK_TOP( 
-        .clk(keccak_clk),
-        .reset(keccak_reset | keccak_rst),
-        .in(keccak_in),
-        .in_ready(IN_READY),
-        .is_last(IS_LAST),
-        .byte_num(BYTE_NUM),
-        .buffer_full(BUFFER_FULL),
-        .out(keccak_hash_reg),
-        .out_ready(SHA3_DONE),
-
-        .fifo_read_en(fifo_read_en),
-        .fifo_read_data(fifo_read_data),
-        .fifo_empty(fifo_empty)
-    );
+//    keccak KECCAK_TOP( 
+//         .clk(keccak_clk),
+//         .reset(keccak_reset | keccak_rst),
+//         .in(keccak_in),
+//         .in_ready(IN_READY),
+//         .is_last(IS_LAST),
+//         .byte_num(BYTE_NUM),
+//         .buffer_full(BUFFER_FULL),
+//         .out(keccak_hash_reg),
+//         .out_ready(SHA3_DONE)
+//     );
      
-     
-    dfsm        dfsm(
+    dfsm dfsm(
         .clk(keccak_clk),
         .reset(keccak_reset | keccak_rst),
         .in(keccak_in),                     // Output to Keccak
@@ -812,13 +790,14 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .byte_num(BYTE_NUM),                // Output to Keccak
         .buffer_full(BUFFER_FULL)           // Input to DFSM
         
-        // ADD control signals to BURST_MASTER
-        // ADD status signals from BURST_MASTER
-
+        // user signals
+        .ocm_data_out(ocm_data_out),
+        .bus_data_valid(bus_data_valid),
+        .dfsm_read_ready(dfsm_read_ready),
+        .read_addr_offset(read_addr_offset),
+        .keccak_hash_reg(keccak_hash_reg) // TODO remove
     );
-    
-    
-    
+
     // User logic ends
 
     endmodule
