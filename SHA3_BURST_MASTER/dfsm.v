@@ -41,7 +41,7 @@ module dfsm (
     always @(posedge clk) begin
         if (reset) begin
             // all 1s using {} syntax
-            keccak_hash_reg <= 64{8'b11000011};
+            keccak_hash_reg <= {64{8'b11000011}};
             hash_ptr <= 0;
             state <= 4'b0;
         end
@@ -63,7 +63,7 @@ module dfsm (
                 
                 default: begin
                 end
-            end
+            endcase
         end
     end
 
