@@ -43,117 +43,117 @@ module dfsm (
             // all 1s using {} syntax
             keccak_hash_reg <= {64{8'b11000011}};
             hash_ptr <= 0;
-            state <= 5'b0;
+            state <= 5'd0;
         end
         else begin
             // read data from bus_fifo, put into keccak_hash_regs
             case (state)
-                5'b0: begin
+                5'd0: begin
                     if (~fifo_empty && hash_ptr < 8) begin
                         fifo_read_en <= 1;
-                        state <= 5'b1;
+                        state <= 5'd1;
                     end
                 end
-                5'b1: begin
+                5'd1: begin
                     keccak_hash_reg[63:0] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b2;
+                    state <= 5'd2;
                 end
-                5'b2: begin
+                5'd2: begin
                     if (~fifo_empty && hash_ptr < 16) begin
                         fifo_read_en <= 1;
-                        state <= 5'b3;
+                        state <= 5'd3;
                     end
                 end
-                5'b3: begin
+                5'd3: begin
                     keccak_hash_reg[127:64] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b4;
+                    state <= 5'd4;
                 end
-                5'b4: begin
+                5'd4: begin
                     if (~fifo_empty && hash_ptr < 24) begin
                         fifo_read_en <= 1;
-                        state <= 5'b5;
+                        state <= 5'd5;
                     end
                 end
-                5'b5: begin
+                5'd5: begin
                     keccak_hash_reg[191:128] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b6;
+                    state <= 5'd6;
                 end
-                5'b6: begin
+                5'd6: begin
                     if (~fifo_empty && hash_ptr < 32) begin
                         fifo_read_en <= 1;
-                        state <= 5'b7;
+                        state <= 5'd7;
                     end
                 end
-                5'b7: begin
+                5'd7: begin
                     keccak_hash_reg[255:192] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b8;
+                    state <= 5'd8;
                 end
-                5'b8: begin
+                5'd8: begin
                     if (~fifo_empty && hash_ptr < 40) begin
                         fifo_read_en <= 1;
-                        state <= 5'b9;
+                        state <= 5'd9;
                     end
                 end
-                5'b9: begin
+                5'd9: begin
                     keccak_hash_reg[319:256] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b10;
+                    state <= 5'd10;
                 end
-                5'b10: begin
+                5'd10: begin
                     if (~fifo_empty && hash_ptr < 48) begin
                         fifo_read_en <= 1;
-                        state <= 5'b11;
+                        state <= 5'd11;
                     end
                 end
-                5'b11: begin
+                5'd11: begin
                     keccak_hash_reg[383:320] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b12;
+                    state <= 5'd12;
                 end
-                5'b12: begin
+                5'd12: begin
                     if (~fifo_empty && hash_ptr < 56) begin
                         fifo_read_en <= 1;
-                        state <= 5'b13;
+                        state <= 5'd13;
                     end
                 end
-                5'b13: begin
+                5'd13: begin
                     keccak_hash_reg[447:384] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b14;
+                    state <= 5'd14;
                 end
-                5'b14: begin
+                5'd14: begin
                     if (~fifo_empty && hash_ptr < 64) begin
                         fifo_read_en <= 1;
-                        state <= 5'b15;
+                        state <= 5'd15;
                     end
                 end
-                5'b15: begin
+                5'd15: begin
                     keccak_hash_reg[511:448] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
 
-                    state <= 5'b16;
+                    state <= 5'd16;
                 end
-                5'b16: begin
-                    state <= 5'b16;
+                5'd16: begin
+                    state <= 5'd16;
                 end
 
                 default: begin
