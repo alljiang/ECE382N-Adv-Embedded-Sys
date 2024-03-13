@@ -784,7 +784,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     dfsm dfsm(
         .clk(keccak_clk),
         .reset(keccak_reset | keccak_rst),
-        .in(keccak_in),                     // Output to Keccak
+        .keccak_input(keccak_in),                     // Output to Keccak
         .in_ready(IN_READY),                // Output to Keccak
         .is_last(IS_LAST),                  // Output to Keccak
         .byte_num(BYTE_NUM),                // Output to Keccak

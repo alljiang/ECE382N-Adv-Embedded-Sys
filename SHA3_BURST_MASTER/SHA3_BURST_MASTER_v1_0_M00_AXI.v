@@ -187,7 +187,7 @@
 	// Example State machine to initialize counter, initialize write transactions, 
 	// initialize read transactions and comparison of read data with the 
 	// written data words.
-	parameter [1:0] IDLE = 2'b00, // This state initiates AXI4Lite transaction 
+	localparam [1:0] IDLE = 2'b00, // This state initiates AXI4Lite transaction 
 			// after the state machine changes state to INIT_WRITE 
 			// when there is 0 to 1 transition on INIT_AXI_TXN
 		INIT_WRITE   = 2'b01, // This state initializes write transaction,

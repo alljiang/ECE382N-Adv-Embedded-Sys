@@ -26,6 +26,8 @@ module dfsm (
     reg fifo_read_en;
     wire [63:0] fifo_read_data;
     wire fifo_empty;
+    wire fifo_half_full;
+    wire fifo_full;
 
     Bus_FIFO #(64) bus_fifo (
         .clk(clk),
@@ -34,9 +36,12 @@ module dfsm (
         .write_en(bus_data_valid),
         .read_en(fifo_read_en),
         .read_data(fifo_read_data),
-        .fifo_half_full(~dfsm_read_ready),
+        .fifo_full(fifo_full),
+        .fifo_half_full(fifo_half_full),
         .fifo_empty(fifo_empty)
     );
+
+    assign dfsm_read_ready = ~fifo_half_full;
 
     always @(posedge clk) begin
         if (reset) begin
