@@ -572,7 +572,7 @@
 
 	 // Forward movement occurs when the channel is valid and ready   
      
-	  assign rnext = M_AXI_RVALID && axi_rready && dfsm_read_ready; // alljiang
+	  assign rnext = M_AXI_RVALID && axi_rready;
 	                                                                        
 	                                                                        
 	// Burst length counter. Uses extra counter register bit to indicate    
@@ -606,7 +606,7 @@
 	      end                                                               
 	    // accept/acknowledge rdata/rresp with axi_rready by the master     
 	    // when M_AXI_RVALID is asserted by slave                           
-	    else if (M_AXI_RVALID)                       
+	    else if (M_AXI_RVALID && dfsm_read_ready) // alljiang
 	      begin                                      
 	         if (M_AXI_RLAST && axi_rready)          
 	          begin                                  
@@ -637,25 +637,7 @@
 	  end                                                                   
 	                                                                        
 	//Flag any read response errors                                         
-	  assign read_resp_error = axi_rready & M_AXI_RVALID & M_AXI_RRESP[1];  
-
-
-	//----------------------------------------
-	//Example design read check data generator
-	//-----------------------------------------
-
-	//Generate expected read data to check against actual read data
-
-	  always @(posedge M_AXI_ACLK)                     
-	  begin                                                  
-		if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)// || M_AXI_RLAST)             
-			expected_rdata <= 'b1;                            
-		else if (M_AXI_RVALID && axi_rready)                  
-			expected_rdata <= expected_rdata + 1;             
-		else                                                  
-			expected_rdata <= expected_rdata;                 
-	  end                                                    
-
+	  assign read_resp_error = axi_rready & M_AXI_RVALID & M_AXI_RRESP[1];                                         
 
 	//----------------------------------
 	//Example design error register
