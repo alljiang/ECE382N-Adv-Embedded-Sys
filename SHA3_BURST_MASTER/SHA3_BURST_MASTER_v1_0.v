@@ -125,6 +125,8 @@
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
         .read_addr_index(read_addr_index),
+        .init_master_txn(init_master_txn),
+        .TXN_DONE(TXN_DONE),
 
 	    .SHA3_DONE(SHA3_DONE),
 	    .SHA3_START(SHA3_START),
@@ -168,11 +170,12 @@
 		.C_M_AXI_RUSER_WIDTH(C_M00_AXI_RUSER_WIDTH),
 		.C_M_AXI_BUSER_WIDTH(C_M00_AXI_BUSER_WIDTH)
 	) SHA3_BURST_MASTER_v1_0_M00_AXI_inst (
-		.INIT_AXI_TXN(SHA3_START),
+		.INIT_AXI_TXN(init_master_txn),
         .ocm_data_out(ocm_data_out),
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
         .read_addr_index(read_addr_index),
+        .TXN_DONE(TXN_DONE),
         
 		.ERROR(m00_axi_error),
 		.M_AXI_ACLK(m00_axi_aclk),

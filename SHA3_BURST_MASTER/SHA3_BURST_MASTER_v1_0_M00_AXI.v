@@ -226,7 +226,6 @@
 	reg  	writes_done;
 	reg  	reads_done;
 	reg  	error_reg;
-	reg  	compare_done;
 	reg  	read_mismatch;
 	reg  	burst_write_active;
 	reg  	burst_read_active;
@@ -289,7 +288,7 @@
 	//Read and Read Response (R)
 	assign M_AXI_RREADY	= axi_rready;
 	//Example design I/O
-	assign TXN_DONE	= compare_done;
+	assign TXN_DONE	= reads_done;
 	//Burst size in bytes
 	assign burst_size_bytes	= C_M_AXI_BURST_LEN * C_M_AXI_DATA_WIDTH/8;
 	assign init_txn_pulse	= (!init_txn_ff2) && init_txn_ff;
@@ -734,9 +733,8 @@
 	        // reset condition                                                                                  
 	        // All the signals are assigned default values under reset condition                                
 	        mst_exec_state      <= IDLE;                                                                
-	        start_single_burst_write <= 1'b0;                                                                   
-	        start_single_burst_read  <= 1'b0;                                                                   
-	        compare_done      <= 1'b0;                                                                          
+	        start_single_burst_write <= 1'b0;
+	        start_single_burst_read  <= 1'b0;
 	        ERROR <= 1'b0;   
 	      end                                                                                                   
 	    else                                                                                                    
@@ -765,7 +763,7 @@
 	            // read controller                                                                              
 	            if (reads_done)                                                                                 
 	              begin                                                                                         
-	                mst_exec_state <= IDLE;                                                             
+	                mst_exec_state <= IDLE;
 	              end                                                                                           
 	            else                                                                                            
 	              begin                                                                                         
