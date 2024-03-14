@@ -12,11 +12,13 @@
 
 #include "clock.h"
 
+uint32_t *ocm_regs;
 uint32_t *burst_regs;
 uint32_t *timer_regs;
 uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
 
+#define ADDRESS_OCM 0xFFFC0000
 #define ADDRESS_BURST_MASTER_SLAVE 0xB0000000
 #define ADDRESS_CAPTURE_TIMER_SLAVE 0xB0002000
 
@@ -25,6 +27,9 @@ map_regs() {
 	int dh = open("/dev/mem", O_RDWR | O_SYNC);
 	if (dh == -1)
 		return -1;
+
+	ocm_regs =
+	    mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, dh, ADDRESS_OCM);
 
 	timer_regs = mmap(NULL,
 	                  32,
@@ -38,7 +43,7 @@ map_regs() {
 	                  PROT_READ | PROT_WRITE,
 	                  MAP_SHARED,
 	                  dh,
-	                  ADDRESS_CAPTURE_TIMER_SLAVE);
+	                  ADDRESS_BURST_MASTER_SLAVE);
 	ps_clk_reg =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
 	pl_clk_reg =
@@ -174,7 +179,20 @@ main() {
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 
-	for (int i = 16; i < 32; i++) { printf("%X\n", burst_regs[i]); }
+	for (int i = 0; i < 16; i++) { ocm_regs[i] = i; }
+
+    // reset
+    burst_regs[0] = 0b1;
+    burst_regs[0] = 0b0;
+
+	// start
+	burst_regs[0] = 0b10;
+
+    usleep(1000);
+
+	for (int i = 16; i < 32; i++) { printf("0x%08X\n", burst_regs[i]); }
+
+    burst_regs[0] = 0b00;
 
 	unmap_regs();
 }
