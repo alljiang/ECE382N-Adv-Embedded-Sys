@@ -12,6 +12,7 @@
 
 #include "clock.h"
 
+uint32_t *burst_regs;
 uint32_t *timer_regs;
 uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
@@ -19,15 +20,25 @@ uint32_t *pl_clk_reg;
 #define ADDRESS_BURST_MASTER_SLAVE 0xB0000000
 #define ADDRESS_CAPTURE_TIMER_SLAVE 0xB0002000
 
-
 int
 map_regs() {
 	int dh = open("/dev/mem", O_RDWR | O_SYNC);
 	if (dh == -1)
 		return -1;
 
-	timer_regs =
-	    mmap(NULL, 32, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xA0000000);
+	timer_regs = mmap(NULL,
+	                  32,
+	                  PROT_READ | PROT_WRITE,
+	                  MAP_SHARED,
+	                  dh,
+	                  ADDRESS_CAPTURE_TIMER_SLAVE);
+
+	burst_regs = mmap(NULL,
+	                  128,
+	                  PROT_READ | PROT_WRITE,
+	                  MAP_SHARED,
+	                  dh,
+	                  ADDRESS_CAPTURE_TIMER_SLAVE);
 	ps_clk_reg =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
 	pl_clk_reg =
@@ -152,58 +163,8 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	*apll_ctrl = 0x2D00;
 }
 
-void
-print_results(struct test_results results) {
-	printf("--------------------------\n");
-	printf("Reads done: %d\n", results.reads_done);
-	printf("Writes done: %d\n", results.writes_done);
-	printf("Compare mismatch found: %d\n", results.compare_mismatch_found);
-	printf("Compare success: %d\n", results.compare_success);
-	printf("Timer write: 0x%X\n", results.timer_write);
-	printf("Timer read: 0x%X\n", results.timer_read);
-}
-
-struct test_results
-run_test(struct test_params params) {
-	int rv;
-	struct test_results results = {0};
-	uint32_t reg0               = 0;
-
-	timer_regs[1] = params.pattern_gen_seed;
-
-	if (params.memory_location == MEMORY_LOCATION_OCM) {
-		timer_regs[2] = 0xFFFC0000;
-	} else if (params.memory_location == MEMORY_LOCATION_BRAM) {
-		// BRAM
-		timer_regs[2] = 0xC0000000;
-	}
-
-	// start test
-	reg0 |= 1u;
-	reg0 |= (params.pattern_gen_mode) << 1u;
-	timer_regs[0] = reg0;
-
-	while (((timer_regs[3] >> 2) & 0b11) != 0b11) {}
-    
-	results.reads_done             = (timer_regs[3] >> 3u) & 1u;
-	results.writes_done            = (timer_regs[3] >> 2u) & 1u;
-	results.compare_mismatch_found = (timer_regs[3] >> 1u) & 1u;
-	results.compare_success        = timer_regs[3] & 1u;
-	results.timer_write            = timer_regs[4];
-	results.timer_read             = timer_regs[5];
-
-	// clear test
-	timer_regs[0] = 0;
-
-	return results;
-}
-
 int
 main() {
-	struct test_params params   = {0};
-	struct test_results results = {0};
-	FILE *csv;
-
 	srand(time(0));
 
 	if (map_regs() == -1) {
@@ -211,41 +172,9 @@ main() {
 		return 1;
 	}
 
-	csv = fopen("Test_out.csv", "w+");
-	fprintf(csv, "PS clk, PL clk, write timer, read timer\n");
+	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 
-	for (int ps = 0; ps < PS_CLK_COUNT; ps++) {
-		for (int pl = 0; pl < PL_CLK_COUNT; pl++) {
-			bool failed = false;
-			set_clock(ps, pl);
-
-			int tests_remaining = TEST_LOOPS;
-			while (TEST_LOOPS == 0 || tests_remaining-- != 0) {
-				params.memory_location = MEMORY_LOCATION_BRAM;  // Test #1
-				// params.memory_location  = MEMORY_LOCATION_OCM;  // Test #2
-				params.pattern_gen_mode = PATTERN_GEN_LFSR;
-				params.pattern_gen_seed = rand();
-
-				results = run_test(params);
-
-				failed = failed || results.compare_mismatch_found;
-                // print_results(results);
-				fprintf(csv, "%s, %s, %d, %d\n", ps_clk_str[ps], pl_clk_str[pl], results.timer_write, results.timer_read);
-			}
-
-			if (!failed) {
-				printf("Test passed: ");
-			} else {
-				printf("Test failed: ");
-			}
-			printf(
-			    "%d Loops of 1024 32-bit words in %s. PS clk: %s, PL clk: %s\n",
-			    TEST_LOOPS,
-			    memory_location_str[params.memory_location],
-			    ps_clk_str[ps],
-			    pl_clk_str[pl]);
-		}
-	}
+	for (int i = 16; i < 32; i++) { printf("%X\n", burst_regs[i]); }
 
 	unmap_regs();
 }
