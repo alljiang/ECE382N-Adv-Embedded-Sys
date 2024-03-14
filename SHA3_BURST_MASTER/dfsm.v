@@ -15,7 +15,7 @@ module dfsm (
     input [127:0] ocm_data_out,
     input bus_data_valid,
     output dfsm_read_ready,
-    output reg [31:0] read_addr_offset,
+    output reg [31:0] read_addr_index,
     output reg [511:0] keccak_hash_reg
 
 );
@@ -46,6 +46,7 @@ module dfsm (
     always @(posedge clk) begin
         if (reset) begin
             // all 1s using {} syntax
+            read_addr_index <= 0;
             keccak_hash_reg <= {64{8'b11000011}};
             hash_ptr <= 0;
             state <= 5'd0;
@@ -63,6 +64,7 @@ module dfsm (
                     keccak_hash_reg[63:0] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd2;
                 end
@@ -76,6 +78,7 @@ module dfsm (
                     keccak_hash_reg[127:64] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd4;
                 end
@@ -89,6 +92,7 @@ module dfsm (
                     keccak_hash_reg[191:128] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd6;
                 end
@@ -102,6 +106,7 @@ module dfsm (
                     keccak_hash_reg[255:192] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd8;
                 end
@@ -115,6 +120,7 @@ module dfsm (
                     keccak_hash_reg[319:256] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd10;
                 end
@@ -128,6 +134,7 @@ module dfsm (
                     keccak_hash_reg[383:320] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd12;
                 end
@@ -141,6 +148,7 @@ module dfsm (
                     keccak_hash_reg[447:384] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd14;
                 end
@@ -154,6 +162,7 @@ module dfsm (
                     keccak_hash_reg[511:448] <= fifo_read_data;
                     hash_ptr <= hash_ptr + 1;
                     fifo_read_en <= 0;
+                    read_addr_index <= read_addr_index + 1;
 
                     state <= 5'd16;
                 end

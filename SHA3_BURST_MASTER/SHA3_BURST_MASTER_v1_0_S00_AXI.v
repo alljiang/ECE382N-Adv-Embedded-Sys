@@ -19,7 +19,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     input wire [127:0] ocm_data_out,
     input wire bus_data_valid,
     output wire dfsm_read_ready,
-    output wire [31:0] read_addr_offset,
+    output wire [31:0] read_addr_index,
 
     output    wire                SHA3_DONE,        // Output from SHA3 Accelerator
     output    wire                SHA3_START,       // Output from SHA3 Accelerator
@@ -794,7 +794,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .ocm_data_out(ocm_data_out),
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
-        .read_addr_offset(read_addr_offset),
+        .read_addr_index(read_addr_index),
         .keccak_hash_reg(keccak_hash_reg) // TODO remove
     );
 

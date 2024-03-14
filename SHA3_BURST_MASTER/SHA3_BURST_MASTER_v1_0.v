@@ -15,7 +15,7 @@
 
 		// Parameters of Axi Master Bus Interface M00_AXI
 		parameter  C_M00_AXI_TARGET_SLAVE_BASE_ADDR	  = 32'hFFFC0000,
-		parameter integer C_M00_AXI_BURST_LEN	      = 16,
+		parameter integer C_M00_AXI_BURST_LEN	      = 1,
 		parameter integer C_M00_AXI_ID_WIDTH	      = 1,
 		parameter integer C_M00_AXI_ADDR_WIDTH	      = 32,
 		parameter integer C_M00_AXI_DATA_WIDTH	      = 128,
@@ -115,7 +115,7 @@
     wire [127:0] ocm_data_out;      // master -> slave
     wire bus_data_valid;            // master -> slave
     wire dfsm_read_ready;           // slave -> master
-    wire [31:0] read_addr_offset;   // slave -> master
+    wire [31:0] read_addr_index;   // slave -> master
 
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
@@ -124,7 +124,7 @@
         .ocm_data_out(ocm_data_out),
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
-        .read_addr_offset(read_addr_offset),
+        .read_addr_index(read_addr_index),
 
 	    .SHA3_DONE(SHA3_DONE),
 	    .SHA3_START(SHA3_START),
@@ -168,11 +168,11 @@
 		.C_M_AXI_RUSER_WIDTH(C_M00_AXI_RUSER_WIDTH),
 		.C_M_AXI_BUSER_WIDTH(C_M00_AXI_BUSER_WIDTH)
 	) SHA3_BURST_MASTER_v1_0_M00_AXI_inst (
-		.INIT_AXI_TXN(m00_axi_init_txn),
+		.INIT_AXI_TXN(SHA3_START),
         .ocm_data_out(ocm_data_out),
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
-        .read_addr_offset(read_addr_offset),
+        .read_addr_index(read_addr_index),
         
 		.ERROR(m00_axi_error),
 		.M_AXI_ACLK(m00_axi_aclk),
