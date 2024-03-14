@@ -77,7 +77,6 @@ module dfsm (
     always @(posedge clk) begin
         if (reset) begin
             // all 1s using {} syntax
-            read_addr_index <= 0;
             keccak_hash_reg <= {64{8'b11000011}};
             state <= 5'd0;
         end
