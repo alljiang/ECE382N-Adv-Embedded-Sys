@@ -18,7 +18,8 @@ module dfsm (
     output reg [31:0] read_addr_index,
     output reg init_master_txn,
     input wire read_done,
-    output reg [511:0] keccak_hash_reg
+    output reg [511:0] keccak_hash_reg,
+    output wire [63:0] debug_memory [depth-1:0]
 
 );
 
@@ -37,6 +38,7 @@ module dfsm (
         .write_data(ocm_data_out),
         .write_en(bus_data_valid),
         .read_en(fifo_read_en),
+        .debug_memory(debug_memory),
         .read_data(fifo_read_data),
         .fifo_full(fifo_full),
         .fifo_half_full(fifo_half_full),

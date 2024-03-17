@@ -696,7 +696,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             end                
         end
     end    
-
+    wire [63:0] debug_memory [depth-1:0]; // TODO remove
     // Implement memory mapped register select and read logic generation
     // Slave register read enable is asserted when valid address is available
     // and the slave is ready to accept the read address.
@@ -729,22 +729,52 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h0E  : reg_data_out <= read_addr_index;
             
             5'h0F  : reg_data_out <= 32'hdeadfeed;
-            5'h10  : reg_data_out <= keccak_hash_reg[511:480];
-            5'h11  : reg_data_out <= keccak_hash_reg[479:448];
-            5'h12  : reg_data_out <= keccak_hash_reg[447:416];
-            5'h13  : reg_data_out <= keccak_hash_reg[415:384];
-            5'h14  : reg_data_out <= keccak_hash_reg[383:352];
-            5'h15  : reg_data_out <= keccak_hash_reg[351:320];
-            5'h16  : reg_data_out <= keccak_hash_reg[319:288];
-            5'h17  : reg_data_out <= keccak_hash_reg[287:256];
-            5'h18  : reg_data_out <= keccak_hash_reg[255:224];
-            5'h19  : reg_data_out <= keccak_hash_reg[223:192];
-            5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
-            5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
-            5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
-            5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
-            5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
-            5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
+            5'h10  : reg_data_out <= debug_memory[7][63:32];
+            5'h11  : reg_data_out <= debug_memory[7][31:0];
+            5'h12  : reg_data_out <= debug_memory[6][63:32];
+            5'h13  : reg_data_out <= debug_memory[6][31:0];
+            5'h14  : reg_data_out <= debug_memory[5][63:32];
+            5'h15  : reg_data_out <= debug_memory[5][31:0];
+            5'h16  : reg_data_out <= debug_memory[4][63:32];
+            5'h17  : reg_data_out <= debug_memory[4][31:0];
+            5'h18  : reg_data_out <= debug_memory[3][63:32];
+            5'h19  : reg_data_out <= debug_memory[3][31:0];
+            5'h1A  : reg_data_out <= debug_memory[2][63:32];
+            5'h1B  : reg_data_out <= debug_memory[2][31:0];
+            5'h1C  : reg_data_out <= debug_memory[1][63:32];
+            5'h1D  : reg_data_out <= debug_memory[1][31:0];
+            5'h1E  : reg_data_out <= debug_memory[0][63:32];
+            5'h1F  : reg_data_out <= debug_memory[0][31:0];
+            // 5'h10  : reg_data_out <= keccak_hash_reg[511:480];
+            // 5'h11  : reg_data_out <= keccak_hash_reg[479:448];
+            // 5'h12  : reg_data_out <= keccak_hash_reg[447:416];
+            // 5'h13  : reg_data_out <= keccak_hash_reg[415:384];
+            // 5'h14  : reg_data_out <= keccak_hash_reg[383:352];
+            // 5'h15  : reg_data_out <= keccak_hash_reg[351:320];
+            // 5'h16  : reg_data_out <= keccak_hash_reg[319:288];
+            // 5'h17  : reg_data_out <= keccak_hash_reg[287:256];
+            // 5'h18  : reg_data_out <= keccak_hash_reg[255:224];
+            // 5'h19  : reg_data_out <= keccak_hash_reg[223:192];
+            // 5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
+            // 5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
+            // 5'h1C  : reg_data_out <= keccak_hash_reg[127
+
+            // 5'h10  : reg_data_out <= keccak_hash_reg[511:480];
+            // 5'h11  : reg_data_out <= keccak_hash_reg[479:448];
+            // 5'h12  : reg_data_out <= keccak_hash_reg[447:416];
+            // 5'h13  : reg_data_out <= keccak_hash_reg[415:384];
+            // 5'h14  : reg_data_out <= keccak_hash_reg[383:352];
+            // 5'h15  : reg_data_out <= keccak_hash_reg[351:320];
+            // 5'h16  : reg_data_out <= keccak_hash_reg[319:288];
+            // 5'h17  : reg_data_out <= keccak_hash_reg[287:256];
+            // 5'h18  : reg_data_out <= keccak_hash_reg[255:224];
+            // 5'h19  : reg_data_out <= keccak_hash_reg[223:192];
+            // 5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
+            // 5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
+            // 5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
+            // 5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
+            // 5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
+            // 5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
             default : reg_data_out <= 0;
           endcase
     end
@@ -804,7 +834,8 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .read_addr_index(read_addr_index),
         .init_master_txn(init_master_txn),
         .read_done(TXN_DONE),
-        .keccak_hash_reg(keccak_hash_reg) // TODO remove
+        .keccak_hash_reg(keccak_hash_reg), // TODO remove
+        .debug_memory(debug_memory)
     );
 
     // User logic ends
