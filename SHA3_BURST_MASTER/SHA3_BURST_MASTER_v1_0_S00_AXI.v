@@ -26,6 +26,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     output    wire                SHA3_DONE,        // Output from SHA3 Accelerator
     output    wire                SHA3_START,       // Output from SHA3 Accelerator
 
+    input wire [31:0] debug,
 
     // User ports ends
     
@@ -720,10 +721,13 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h09  : reg_data_out <= slv_reg9;
             5'h0A  : reg_data_out <= slv_reg10;
             5'h0B  : reg_data_out <= slv_reg11;
-            5'h0C  : reg_data_out <= slv_reg12;
-            5'h0D  : reg_data_out <= slv_reg13;
+            // 5'h0C  : reg_data_out <= slv_reg12;
+            5'h0C  : reg_data_out <= debug;
+            // 5'h0D  : reg_data_out <= slv_reg13;
+            5'h0D  : reg_data_out <= 32'habcd1234;
             // 5'h0E  : reg_data_out <= slv_reg14;
             5'h0E  : reg_data_out <= read_addr_index;
+            
             5'h0F  : reg_data_out <= 32'hdeadfeed;
             5'h10  : reg_data_out <= keccak_hash_reg[511:480];
             5'h11  : reg_data_out <= keccak_hash_reg[479:448];

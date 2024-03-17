@@ -38,6 +38,8 @@
         input wire dfsm_read_ready,
         input wire [31:0] read_addr_index,
 
+        output reg [31:0] debug,
+
 		// User ports ends
 		
 		// Do not modify the ports beyond this line
@@ -799,9 +801,7 @@
 	  end                                                                                                       
 	                                                                                                            
 	 // Check for last write completion.                                                                        
-	                                                                                                            
-	 // This logic is to qualify the last write count with the final write                                      
-	 // response. This demonstrates how to confirm that a write has been                                        
+	                                      init_master_txno confirm that a write has been                                        
 	 // committed.                                                                                              
 	                                                                                                            
 	  always @(posedge M_AXI_ACLK)                                                                              
@@ -855,8 +855,14 @@
 	// Add user logic here
 
     // ADD state machine to feed the keccak unit in the Slave unit
-                    
 
+    assign debug[1:0] = mst_exec_state;
+    assign debug[4] = reads_done;
+    assign debug[8] = burst_read_active;
+    assign debug[12] = ERROR;
+    assign debug[19:16] = read_burst_counter[4:0];
+    assign debug[31:28] = 4'hA;
+                    
 	// User logic ends
 
 	endmodule
