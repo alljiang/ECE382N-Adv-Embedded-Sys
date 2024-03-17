@@ -20,7 +20,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     input wire bus_data_valid,
     output wire dfsm_read_ready,
     output wire [31:0] read_addr_index,
-    input wire init_master_txn,
+    output wire init_master_txn,
     input wire TXN_DONE,
 
     output    wire                SHA3_DONE,        // Output from SHA3 Accelerator

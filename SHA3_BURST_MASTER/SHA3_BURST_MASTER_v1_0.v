@@ -116,6 +116,7 @@
     wire bus_data_valid;            // master -> slave
     wire dfsm_read_ready;           // slave -> master
     wire [31:0] read_addr_index;   // slave -> master
+    wire [31:0] debug;
 
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),

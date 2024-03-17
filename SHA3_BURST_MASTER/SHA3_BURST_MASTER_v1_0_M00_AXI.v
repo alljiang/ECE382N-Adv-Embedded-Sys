@@ -853,13 +853,14 @@
 	// Add user logic here
 
     // ADD state machine to feed the keccak unit in the Slave unit
-
-    assign debug[1:0] = mst_exec_state;
-    assign debug[4] = reads_done;
-    assign debug[8] = burst_read_active;
-    assign debug[12] = ERROR;
-    assign debug[16] = read_burst_counter[0];
-    assign debug[31:28] = 4'hA;
+    
+    assign debug[31:0] = {4'hA, 
+                        8'b0,
+                        3'b0, read_burst_counter,
+                        3'b0, ERROR,
+                        3'b0, burst_read_active,
+                        3'b0, reads_done, 
+                        2'b0, mst_exec_state};
                     
 	// User logic ends
 
