@@ -296,7 +296,7 @@
 	assign init_txn_pulse	= (!init_txn_ff2) && init_txn_ff;
 
     // alljiang
-    assign bus_data_valid = M_AXI_RVALID;
+    assign bus_data_valid = rnext;
     assign ocm_data_out = M_AXI_RDATA;
 
 	//Generate a pulse to initiate AXI transaction.
