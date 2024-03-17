@@ -19,7 +19,7 @@ module dfsm (
     output reg init_master_txn,
     input wire read_done,
     output reg [511:0] keccak_hash_reg,
-    output wire [63:0] debug_memory [depth-1:0]
+    output wire [64*8-1:0] debug_memory
 
 );
 
