@@ -38,7 +38,7 @@
         input wire dfsm_read_ready,
         input wire [31:0] read_addr_index,
 
-        output reg [31:0] debug,
+        output wire [31:0] debug,
 
 		// User ports ends
 		
@@ -800,9 +800,7 @@
 	      burst_write_active <= 0;                                                                              
 	  end                                                                                                       
 	                                                                                                            
-	 // Check for last write completion.                                                                        
-	                                      init_master_txno confirm that a write has been                                        
-	 // committed.                                                                                              
+	 // Check for last write completion.                                                                                        
 	                                                                                                            
 	  always @(posedge M_AXI_ACLK)                                                                              
 	  begin                                                                                                     
@@ -860,7 +858,7 @@
     assign debug[4] = reads_done;
     assign debug[8] = burst_read_active;
     assign debug[12] = ERROR;
-    assign debug[19:16] = read_burst_counter[4:0];
+    assign debug[16] = read_burst_counter[0];
     assign debug[31:28] = 4'hA;
                     
 	// User logic ends

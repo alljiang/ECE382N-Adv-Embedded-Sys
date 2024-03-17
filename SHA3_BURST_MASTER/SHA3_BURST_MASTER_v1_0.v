@@ -131,7 +131,7 @@
 	    .SHA3_DONE(SHA3_DONE),
 	    .SHA3_START(SHA3_START),
 
-        .debug(debug)
+        .debug(debug),
 	    
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -179,7 +179,7 @@
         .read_addr_index(read_addr_index),
         .TXN_DONE(TXN_DONE),
         
-        .debug(debug)
+        .debug(debug),
         
 		.ERROR(m00_axi_error),
 		.M_AXI_ACLK(m00_axi_aclk),
