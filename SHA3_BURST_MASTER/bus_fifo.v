@@ -33,6 +33,8 @@ module Bus_FIFO #(parameter depth=32)
     always @(posedge clk) begin
         if (rst) begin
             count <= 0;
+            write_ptr <= 0;
+            read_ptr <= 0;
         end
         else begin
             case ({write_en, read_en})

@@ -81,6 +81,7 @@ module dfsm (
             // all 1s using {} syntax
             keccak_hash_reg <= {64{8'b11000011}};
             state <= 5'd0;
+            fifo_read_en <= 0;
         end
         else begin
             // read data from bus_fifo, put into keccak_hash_regs
