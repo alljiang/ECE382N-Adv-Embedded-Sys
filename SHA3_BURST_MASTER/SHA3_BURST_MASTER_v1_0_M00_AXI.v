@@ -863,7 +863,7 @@
     //                     2'b0, mst_exec_state};
 
     reg [31:0] captured_address;
-    assign debug = captured_address
+    assign debug = captured_address;
 
     always @(posedge clk) begin
         if (M_AXI_ARESETN == 0) begin
