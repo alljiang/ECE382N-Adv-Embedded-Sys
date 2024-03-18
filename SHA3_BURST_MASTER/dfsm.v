@@ -51,7 +51,7 @@ module dfsm (
 
     always @(posedge clk) begin
         if (reset) begin
-           read_addr_index <= 0;
+           read_addr_index <= 1; //todo fix
            read_state <= 0;
            init_master_txn <= 0;
         end
