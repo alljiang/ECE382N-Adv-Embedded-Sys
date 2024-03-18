@@ -48,27 +48,32 @@ module dfsm (
 
     assign dfsm_read_ready = ~fifo_half_full;
 
-    reg read_state;
+    reg [1:0] read_state;
 
     always @(posedge clk) begin
         if (reset) begin
            read_addr_index <= 1; //todo fix
-           read_state <= 1'b0;
+           read_state <= 2'b10;
            init_master_txn <= 0;
         end
         else begin
             case (read_state)
-                1'b0: begin
+                2'b0: begin
                     if (read_addr_index < 2) begin
                         init_master_txn <= 1;
-                        read_state <= 1'b1;
+                        read_state <= 2'b1;
                     end
                 end
-                1'b1: begin
+                2'b1: begin
                     init_master_txn <= 0;
                     if (read_done) begin
-                        read_state <= 1'b0;
+                        read_state <= 2'b10;
                         read_addr_index <= read_addr_index + 1;
+                    end
+                end
+                2'b10: begin
+                    if (start) begin
+                        read_state <= 1'b0;
                     end
                 end
                 default: begin
