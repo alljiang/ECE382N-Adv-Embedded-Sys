@@ -58,7 +58,7 @@ module dfsm (
         else begin
             case (read_state)
                 1'b0: begin
-                    if (read_addr_index < 4) begin
+                    if (read_addr_index < 1) begin
                         init_master_txn <= 1;
                         read_state <= 1'b1;
                     end
