@@ -33,7 +33,7 @@ module dfsm (
     wire fifo_half_full;
     wire fifo_full;
 
-    Bus_FIFO #(64) bus_fifo (
+    Bus_FIFO #(4) bus_fifo (
         .clk(clk),
         .rst(reset),
         .write_data(ocm_data_out),
