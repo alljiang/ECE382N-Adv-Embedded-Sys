@@ -29,13 +29,12 @@ reg read_done;
 wire [511:0] keccak_hash_reg;
 wire [64*8-1:0] debug_memory;
 
-my_dfsm #(16) dfsm (
+dfsm my_dfsm (
     .clk(clk),
     .reset(rst),
     .keccak_input(keccak_input),
     .in_ready(in_ready),
     .is_last(is_last),
-    .read_data(read_data),
     .byte_num(byte_num),
     .buffer_full(buffer_full),
     .start(start),
@@ -66,15 +65,34 @@ initial begin
     
     #5
     rst = 0;
-    #1;
+    #5;
    
+    start = 1;
+    #2;
+    ocm_data_out = `combine(64'd1, 64'd0);
+    bus_data_valid = 1;
+    read_done = 1;
+    #1;
+    bus_data_valid = 0;
+    #2;
+
+    ocm_data_out = `combine(64'd3, 64'd2);
+    bus_data_valid = 1;
+    read_done = 1;
+    #1;
+    bus_data_valid = 0;
+    #2;
+
+    #30;
+
+
 
     $finish;
     
 end
 
 initial begin
-  $dumpfile ("dfsm.vcd");
+  $dumpfile ("dfsm_tb.vcd");
   $dumpvars (0, my_dfsm);
   #1;
 end

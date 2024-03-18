@@ -99,30 +99,25 @@ module dfsm (
                     end
                 end
                 5'd1: begin
-                    keccak_hash_reg[63:0] <= fifo_read_data;
                     fifo_read_en <= 0;
                     state <= 5'd2;
                 end
                 5'd2: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd3;
-                    end
+                    keccak_hash_reg[63:0] <= fifo_read_data;
+                    state <= 5'd3;
                 end
                 5'd3: begin
-                    keccak_hash_reg[127:64] <= fifo_read_data;
-                    fifo_read_en <= 0;
-                    state <= 5'd4;
-                end
-                5'd4: begin
                     if (~fifo_empty) begin
                         fifo_read_en <= 1;
-                        state <= 5'd5;
+                        state <= 5'd4;
                     end
                 end
-                5'd5: begin
-                    keccak_hash_reg[191:128] <= fifo_read_data;
+                5'd4: begin
                     fifo_read_en <= 0;
+                    state <= 5'd5;
+                end
+                5'd5: begin
+                    keccak_hash_reg[127:64] <= fifo_read_data;
                     state <= 5'd6;
                 end
                 5'd6: begin
@@ -132,30 +127,25 @@ module dfsm (
                     end
                 end
                 5'd7: begin
-                    keccak_hash_reg[255:192] <= fifo_read_data;
                     fifo_read_en <= 0;
                     state <= 5'd8;
                 end
                 5'd8: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd9;
-                    end
+                    keccak_hash_reg[191:128] <= fifo_read_data;
+                    state <= 5'd9;
                 end
                 5'd9: begin
-                    keccak_hash_reg[319:256] <= fifo_read_data;
-                    fifo_read_en <= 0;
-                    state <= 5'd10;
-                end
-                5'd10: begin
                     if (~fifo_empty) begin
                         fifo_read_en <= 1;
-                        state <= 5'd11;
+                        state <= 5'd10;
                     end
                 end
-                5'd11: begin
-                    keccak_hash_reg[383:320] <= fifo_read_data;
+                5'd10: begin
                     fifo_read_en <= 0;
+                    state <= 5'd11;
+                end
+                5'd11: begin
+                    keccak_hash_reg[255:192] <= fifo_read_data;
                     state <= 5'd12;
                 end
                 5'd12: begin
@@ -165,23 +155,56 @@ module dfsm (
                     end
                 end
                 5'd13: begin
-                    keccak_hash_reg[447:384] <= fifo_read_data;
                     fifo_read_en <= 0;
                     state <= 5'd14;
                 end
                 5'd14: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd15;
-                    end
+                    keccak_hash_reg[319:256] <= fifo_read_data;
+                    state <= 5'd15;
                 end
                 5'd15: begin
-                    keccak_hash_reg[511:448] <= fifo_read_data;
-                    fifo_read_en <= 0;
-                    state <= 5'd16;
+                    if (~fifo_empty) begin
+                        fifo_read_en <= 1;
+                        state <= 5'd16;
+                    end
                 end
                 5'd16: begin
-                    state <= 5'd16;
+                    fifo_read_en <= 0;
+                    state <= 5'd17;
+                end
+                5'd17: begin
+                    keccak_hash_reg[383:320] <= fifo_read_data;
+                    state <= 5'd18;
+                end
+                5'd18: begin
+                    if (~fifo_empty) begin
+                        fifo_read_en <= 1;
+                        state <= 5'd19;
+                    end
+                end
+                5'd19: begin
+                    fifo_read_en <= 0;
+                    state <= 5'd20;
+                end
+                5'd20: begin
+                    keccak_hash_reg[447:384] <= fifo_read_data;
+                    state <= 5'd21;
+                end
+                5'd21: begin
+                    if (~fifo_empty) begin
+                        fifo_read_en <= 1;
+                        state <= 5'd22;
+                    end
+                end
+                5'd22: begin
+                    fifo_read_en <= 0;
+                    state <= 5'd23;
+                end
+                5'd23: begin
+                    keccak_hash_reg[511:448] <= fifo_read_data;
+                    state <= 5'd24;
+                end
+                5'd24: begin
                 end
 
                 default: begin
