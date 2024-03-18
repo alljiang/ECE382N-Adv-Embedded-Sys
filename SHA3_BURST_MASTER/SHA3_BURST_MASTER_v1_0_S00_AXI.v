@@ -21,6 +21,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     output wire dfsm_read_ready,
     output wire [31:0] read_addr_index,
     output wire init_master_txn,
+    input wire read_active,
     input wire TXN_DONE,
 
     output    wire                SHA3_DONE,        // Output from SHA3 Accelerator
@@ -823,6 +824,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .read_addr_index(read_addr_index),
         .init_master_txn(init_master_txn),
         .read_done(TXN_DONE),
+        .read_active(read_active),
         .keccak_hash_reg(keccak_hash_reg), // TODO remove
         .debug_memory(debug_memory)
     );

@@ -12,6 +12,7 @@ module dfsm (
     output reg [2:0] byte_num,
     input buffer_full,
     input start,
+    input read_active,
 
     input [127:0] ocm_data_out,
     input bus_data_valid,
@@ -52,25 +53,30 @@ module dfsm (
     always @(posedge clk) begin
         if (reset) begin
            read_addr_index <= 0;
-           read_state <= 2'b10;
+           read_state <= 2'b11;
            init_master_txn <= 0;
         end
         else begin
             case (read_state)
                 2'b0: begin
-                    if (read_addr_index < 1) begin
+                    if (read_addr_index < 4) begin
                         init_master_txn <= 1;
                         read_state <= 2'b1;
                     end
                 end
                 2'b1: begin
                     init_master_txn <= 0;
-                    if (read_done) begin
+                    if (read_active) begin
                         read_state <= 2'b10;
-                        read_addr_index <= read_addr_index + 1;
                     end
                 end
                 2'b10: begin
+                    if (read_done) begin
+                        read_state <= 2'b11;
+                        read_addr_index <= read_addr_index + 1;
+                    end
+                end
+                2'b11: begin
                     if (start) begin
                         read_state <= 1'b0;
                     end

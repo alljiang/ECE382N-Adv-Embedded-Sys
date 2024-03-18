@@ -37,6 +37,7 @@
         output wire bus_data_valid,
         input wire dfsm_read_ready,
         input wire [31:0] read_addr_index,
+        output wire read_active,
 
         output wire [31:0] debug,
 
@@ -298,6 +299,7 @@
     // alljiang
     assign bus_data_valid = rnext;
     assign ocm_data_out = M_AXI_RDATA;
+    assign read_active = burst_read_active;
 
 	//Generate a pulse to initiate AXI transaction.
 	always @(posedge M_AXI_ACLK)										      
