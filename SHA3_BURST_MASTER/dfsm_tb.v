@@ -8,6 +8,19 @@
 
 `define combine(a, b) {a, b}
 
+`define send_ocm_data(data2, data1) \
+    while (init_master_txn !== 1) \
+        #1; \
+    read_active = 1; \
+    read_done = 0; \
+    #3; \
+    ocm_data_out = `combine(data2, data1); \
+    bus_data_valid = 1; \
+    read_done = 1; \
+    read_active = 0; \
+    #1; \
+    bus_data_valid = 0;
+
 module dfsm_tb;
 
 reg clk;
@@ -23,8 +36,12 @@ wire dfsm_read_ready;
 wire [31:0] read_addr_index;
 wire init_master_txn;
 reg read_done;
+reg read_active;
+reg [15:0] number_bytes;
 wire [511:0] keccak_hash_reg;
-wire [64*8-1:0] debug_memory;
+wire [31:0] debug1;
+wire [31:0] debug2;
+wire out_ready;
 
 dfsm my_dfsm (
     .clk(clk),
@@ -32,8 +49,8 @@ dfsm my_dfsm (
 
     .start(start),
 
-    .in_ready(in_ready),
-    .is_last(is_last),
+    .keccak_in_ready(in_ready),
+    .keccak_is_last(is_last),
 
     .ocm_data_out(ocm_data_out),
     .bus_data_valid(bus_data_valid),
@@ -43,10 +60,12 @@ dfsm my_dfsm (
     .read_done(read_done),
     .read_active(read_active),
     
-    .number_bytes(16'd0),
+    .number_bytes(number_bytes),
 
     .keccak_hash_reg(keccak_hash_reg),
-    .debug_memory(debug_memory)
+    .debug1(debug1),
+    .debug2(debug2),
+    .out_ready(out_ready)
 );
 
 initial begin
@@ -57,35 +76,32 @@ end
 initial begin
 
     rst = 1;
-    buffer_full = 0;
     start = 0;
     ocm_data_out = 128'b0;
     bus_data_valid = 0;
     read_done = 0;
+    read_active = 0;
+    number_bytes = 0;
     
     #5
     rst = 0;
     #5;
    
     start = 1;
-    #2;
-    ocm_data_out = `combine(64'd1, 64'd0);
-    bus_data_valid = 1;
-    read_done = 1;
+    number_bytes = 16'd139;
     #1;
-    bus_data_valid = 0;
-    #2;
 
-    ocm_data_out = `combine(64'd3, 64'd2);
-    bus_data_valid = 1;
-    read_done = 1;
-    #1;
-    bus_data_valid = 0;
-    #2;
+    `send_ocm_data("k brown ", "The quic");
+    `send_ocm_data("s over t", "fox jump");
+    `send_ocm_data("dog     ", "he lazy ");
+    `send_ocm_data("k brown ", "The quic");
+    `send_ocm_data("s over t", "fox jump");
+    `send_ocm_data("dog     ", "he lazy ");
+    `send_ocm_data("k brown ", "The quic");
+    `send_ocm_data("s over t", "fox jump");
+    `send_ocm_data("dog     ", "he lazy ");
 
-    #30;
-
-
+    #50;
 
     $finish;
     
@@ -96,5 +112,11 @@ initial begin
   $dumpvars (0, my_dfsm);
   #1;
 end
+
+initial begin
+   #200; // Wait a long time in simulation units (adjust as needed).
+   $display("Caught by trap");
+   $finish;
+ end
 
 endmodule

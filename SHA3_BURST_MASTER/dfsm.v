@@ -27,7 +27,6 @@ module dfsm (
 );
 
     // Keccak I/O
-    reg [63:0] keccak_input;
     reg in_ready;
     reg is_last;
     reg [2:0] byte_num;
@@ -43,7 +42,7 @@ module dfsm (
     wire fifo_half_full;
     wire fifo_full;
 
-    Bus_FIFO #(4) bus_fifo (
+    Bus_FIFO #(64) bus_fifo (
         .clk(clk),
         .rst(reset),
         .write_data(ocm_data_out),
@@ -58,11 +57,11 @@ module dfsm (
    keccak KECCAK_TOP( 
         .clk(clk),
         .reset(reset),
-        .in(keccak_input),
+        .in(fifo_read_data),
         .in_ready(in_ready),
-        .is_last(IS_LAST),
-        .byte_num(BYTE_NUM),
-        .buffer_full(BUFFER_FULL),
+        .is_last(is_last),
+        .byte_num(byte_num),
+        .buffer_full(buffer_full),
         .out(keccak_hash_reg),
         .out_ready(out_ready)
     );
@@ -82,9 +81,14 @@ module dfsm (
         else begin
             case (read_state)
                 2'b0: begin
-                    if (bytes_to_read >= 16) begin
+                    if (bytes_to_read >= 0) begin
                         init_master_txn <= 1;
-                        bytes_to_read <= bytes_to_read - 16;
+                        if (bytes_to_read <= 16) begin
+                            bytes_to_read <= 0;
+                        end
+                        else begin
+                            bytes_to_read <= bytes_to_read - 16;
+                        end
                         read_state <= 2'b1;
                     end
                 end
@@ -96,7 +100,7 @@ module dfsm (
                 end
                 2'b10: begin
                     if (read_done) begin
-                        read_state <= 2'b11;
+                        read_state <= 2'b0;
                         read_addr_index <= read_addr_index + 1;
                     end
                 end
@@ -134,7 +138,7 @@ module dfsm (
                     end
                 end
                 4'd1: begin
-                    if (~fifo_empty && bytes_to_process > 0) begin
+                    if (~fifo_empty && bytes_to_process > 0 && ~buffer_full) begin
                         fifo_read_en <= 1;
 
                         state <= 4'd2;
