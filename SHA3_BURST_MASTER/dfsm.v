@@ -24,7 +24,6 @@ module dfsm (
 
 );
 
-    reg [15:0] hash_ptr;
     reg [4:0] state;
 
     reg fifo_read_en;
@@ -59,7 +58,7 @@ module dfsm (
         else begin
             case (read_state)
                 2'b0: begin
-                    if (read_addr_index < 2) begin
+                    if (read_addr_index < 1) begin
                         init_master_txn <= 1;
                         read_state <= 2'b1;
                     end
