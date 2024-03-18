@@ -868,7 +868,7 @@
     always @(posedge clk) begin
         if (M_AXI_ARESETN == 0) begin
             captured_address <= 32'hABCD1234;
-        end else if (M_AXI_ARVALID && M_AXI_ARVALID && M_AXI_ARREADY) begin
+        end else if (M_AXI_ARVALID && M_AXI_ARREADY) begin
             captured_address <= M_AXI_ARADDR;
         end
     end
