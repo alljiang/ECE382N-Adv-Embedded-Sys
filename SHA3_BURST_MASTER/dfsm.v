@@ -5,14 +5,10 @@ module dfsm (
     input clk,
     input reset,
 
-    // keccak I/O
-    output reg [63:0] keccak_input,
-    output reg in_ready,
-    output reg is_last,
-    output reg [2:0] byte_num,
-    input buffer_full,
     input start,
-    input read_active,
+
+    output keccak_in_ready,
+    output keccak_is_last,
 
     input [127:0] ocm_data_out,
     input bus_data_valid,
@@ -20,12 +16,27 @@ module dfsm (
     output reg [31:0] read_addr_index,
     output reg init_master_txn,
     input wire read_done,
-    output reg [511:0] keccak_hash_reg,
-    output wire [64*8-1:0] debug_memory
+    input read_active,
 
+    input wire [15:0] number_bytes,
+
+    output reg [511:0] keccak_hash_reg,
+    output wire [31:0] debug1,
+    output wire [31:0] debug2,
+    output wire out_ready
 );
 
-    reg [4:0] state;
+    // Keccak I/O
+    reg [63:0] keccak_input;
+    reg in_ready;
+    reg is_last;
+    reg [2:0] byte_num;
+    wire buffer_full;
+    wire read_active;
+    assign keccak_in_ready = in_ready;
+    assign keccak_is_last = is_last;
+
+    reg [3:0] state;
 
     reg fifo_read_en;
     wire [63:0] fifo_read_data;
@@ -39,17 +50,30 @@ module dfsm (
         .write_data(ocm_data_out),
         .write_en(bus_data_valid),
         .read_en(fifo_read_en),
-        .debug_memory(debug_memory),
         .read_data(fifo_read_data),
         .fifo_full(fifo_full),
         .fifo_half_full(fifo_half_full),
         .fifo_empty(fifo_empty)
     );
 
+   keccak KECCAK_TOP( 
+        .clk(clk),
+        .reset(reset),
+        .in(keccak_input),
+        .in_ready(in_ready),
+        .is_last(IS_LAST),
+        .byte_num(BYTE_NUM),
+        .buffer_full(BUFFER_FULL),
+        .out(keccak_hash_reg),
+        .out_ready(out_ready)
+    );
+
     assign dfsm_read_ready = ~fifo_half_full;
 
     reg [1:0] read_state;
+    reg [15:0] bytes_to_read;
 
+    // this state machine will read words from the bus_fifo
     always @(posedge clk) begin
         if (reset) begin
            read_addr_index <= 0;
@@ -59,8 +83,9 @@ module dfsm (
         else begin
             case (read_state)
                 2'b0: begin
-                    if (read_addr_index < 4) begin
+                    if (bytes_to_read >= 16) begin
                         init_master_txn <= 1;
+                        bytes_to_read <= bytes_to_read - 16;
                         read_state <= 2'b1;
                     end
                 end
@@ -79,6 +104,7 @@ module dfsm (
                 2'b11: begin
                     if (start) begin
                         read_state <= 1'b0;
+                        bytes_to_read <= number_bytes;
                     end
                 end
                 default: begin
@@ -86,136 +112,95 @@ module dfsm (
             endcase
         end
     end
+
+    reg [15:0] bytes_to_process;
 
     always @(posedge clk) begin
         if (reset) begin
             // all 1s using {} syntax
             keccak_hash_reg <= {64{8'b11000011}};
-            state <= 5'd0;
+            state <= 4'd0;
             fifo_read_en <= 0;
+            bytes_to_process <= 0;
+            in_ready <= 0;
+            is_last <= 0;
+            byte_num <= 0;
         end
         else begin
-            // read data from bus_fifo, put into keccak_hash_regs
             case (state)
-                5'd0: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd1;
+                4'd0: begin
+                    // wait for start signal
+                    if (start) begin
+                        state <= 4'd1;
+                        bytes_to_process <= number_bytes;
                     end
                 end
-                5'd1: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd2;
-                end
-                5'd2: begin
-                    keccak_hash_reg[63:0] <= fifo_read_data;
-                    state <= 5'd3;
-                end
-                5'd3: begin
-                    if (~fifo_empty) begin
+                4'd1: begin
+                    if (~fifo_empty && bytes_to_process > 0) begin
                         fifo_read_en <= 1;
-                        state <= 5'd4;
-                    end
-                end
-                5'd4: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd5;
-                end
-                5'd5: begin
-                    keccak_hash_reg[127:64] <= fifo_read_data;
-                    state <= 5'd6;
-                end
-                5'd6: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd7;
-                    end
-                end
-                5'd7: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd8;
-                end
-                5'd8: begin
-                    keccak_hash_reg[191:128] <= fifo_read_data;
-                    state <= 5'd9;
-                end
-                5'd9: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd10;
-                    end
-                end
-                5'd10: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd11;
-                end
-                5'd11: begin
-                    keccak_hash_reg[255:192] <= fifo_read_data;
-                    state <= 5'd12;
-                end
-                5'd12: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd13;
-                    end
-                end
-                5'd13: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd14;
-                end
-                5'd14: begin
-                    keccak_hash_reg[319:256] <= fifo_read_data;
-                    state <= 5'd15;
-                end
-                5'd15: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd16;
-                    end
-                end
-                5'd16: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd17;
-                end
-                5'd17: begin
-                    keccak_hash_reg[383:320] <= fifo_read_data;
-                    state <= 5'd18;
-                end
-                5'd18: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd19;
-                    end
-                end
-                5'd19: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd20;
-                end
-                5'd20: begin
-                    keccak_hash_reg[447:384] <= fifo_read_data;
-                    state <= 5'd21;
-                end
-                5'd21: begin
-                    if (~fifo_empty) begin
-                        fifo_read_en <= 1;
-                        state <= 5'd22;
-                    end
-                end
-                5'd22: begin
-                    fifo_read_en <= 0;
-                    state <= 5'd23;
-                end
-                5'd23: begin
-                    keccak_hash_reg[511:448] <= fifo_read_data;
-                    state <= 5'd24;
-                end
-                5'd24: begin
-                end
 
+                        state <= 4'd2;
+                    end
+                end
+                4'd2: begin
+                    fifo_read_en <= 0;
+                    in_ready <= 1;
+                    state <= 4'd3;
+
+                    if (bytes_to_process <= 8) begin
+                        is_last <= 1;
+                    end
+
+                    if (bytes_to_process >= 8) begin
+                        bytes_to_process <= bytes_to_process - 8;
+                        byte_num <= 0;
+                    end
+                    else begin
+                        bytes_to_process <= 0;
+                        byte_num <= bytes_to_process;
+                    end
+                end
+                4'd3: begin
+                    in_ready <= 0;
+                    
+                    if (is_last) begin
+                        state <= 4'd4;
+                        is_last <= 0;
+                    end
+                    else begin
+                        state <= 4'd1;
+                    end
+                end
+                4'd4: begin
+                    // wait for out_ready
+                    if (out_ready) begin
+                        state <= 4'd5;
+                    end
+                end
+                4'd5: begin
+                    // done
+                end
                 default: begin
                 end
             endcase
         end
     end
+
+    assign debug1[31:0] = {
+        bytes_to_read,
+        bytes_to_process,
+    }
+
+    assign debug2[31:0] = {
+        3'b0, fifo_empty,
+        3'b0, fifo_read_en,
+        3'b0, read_active,
+        3'b0, read_done,
+
+        3'b0, in_ready,
+        3'b0, is_last,
+        1'b0, byte_num,
+        state,
+    }
 
  endmodule

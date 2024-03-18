@@ -116,7 +116,6 @@
     wire bus_data_valid;            // master -> slave
     wire dfsm_read_ready;           // slave -> master
     wire [31:0] read_addr_index;   // slave -> master
-    wire [31:0] debug;
 
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
@@ -133,8 +132,6 @@
 	    .SHA3_DONE(SHA3_DONE),
 	    .SHA3_START(SHA3_START),
 
-        .debug(debug),
-	    
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
 		.S_AXI_AWADDR(s00_axi_awaddr),
@@ -181,8 +178,6 @@
         .read_addr_index(read_addr_index),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
-        
-        .debug(debug),
         
 		.ERROR(m00_axi_error),
 		.M_AXI_ACLK(m00_axi_aclk),

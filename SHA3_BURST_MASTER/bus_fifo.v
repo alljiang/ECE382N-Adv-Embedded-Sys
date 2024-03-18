@@ -7,7 +7,6 @@ module Bus_FIFO #(parameter depth=32)
     input write_en,
     input [127:0] write_data,
     input read_en,
-    output wire [64*8-1:0] debug_memory,
     output reg [63:0] read_data,
     output fifo_full,
     output fifo_half_full,
@@ -18,8 +17,6 @@ module Bus_FIFO #(parameter depth=32)
     reg [$clog2(depth)-1:0] write_ptr;
     reg [$clog2(depth)-1:0] read_ptr;
     reg [$clog2(depth):0] count;
-    
-    assign debug_memory = {memory[7],memory[6],memory[5],memory[4],memory[3],memory[2],memory[1],memory[0]};
     
     assign fifo_full = count == depth;
     assign fifo_half_full = count >= (depth >> 1);

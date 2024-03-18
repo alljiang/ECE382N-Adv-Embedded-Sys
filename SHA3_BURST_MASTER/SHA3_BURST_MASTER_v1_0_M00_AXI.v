@@ -39,8 +39,6 @@
         input wire [31:0] read_addr_index,
         output wire read_active,
 
-        output wire [31:0] debug,
-
 		// User ports ends
 		
 		// Do not modify the ports beyond this line
@@ -856,25 +854,6 @@
 
     // ADD state machine to feed the keccak unit in the Slave unit
     
-    // assign debug[31:0] = {4'hA, 
-    //                     8'b0,
-    //                     3'b0, read_burst_counter,
-    //                     3'b0, ERROR,
-    //                     3'b0, burst_read_active,
-    //                     3'b0, reads_done, 
-    //                     2'b0, mst_exec_state};
-
-    reg [31:0] captured_address;
-    assign debug = captured_address;
-
-    always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0) begin
-            captured_address <= 32'hABCD1234;
-        end else if (M_AXI_ARVALID && M_AXI_ARREADY) begin
-            captured_address <= M_AXI_ARADDR;
-        end
-    end
-                    
 	// User logic ends
 
 	endmodule

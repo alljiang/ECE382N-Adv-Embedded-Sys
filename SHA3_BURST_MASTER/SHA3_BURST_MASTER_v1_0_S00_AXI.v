@@ -27,8 +27,6 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     output    wire                SHA3_DONE,        // Output from SHA3 Accelerator
     output    wire                SHA3_START,       // Output from SHA3 Accelerator
 
-    input wire [31:0] debug,
-
     // User ports ends
     
     // Do not modify the ports beyond this line
@@ -697,7 +695,8 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             end                
         end
     end    
-    wire [64*8-1:0] debug_memory; // TODO remove
+    wire [31:0] debug1; // TODO remove
+    wire [31:0] debug2; // TODO remove
     // Implement memory mapped register select and read logic generation
     // Slave register read enable is asserted when valid address is available
     // and the slave is ready to accept the read address.
@@ -720,34 +719,19 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h07  : reg_data_out <= 32'hfeedbeef;              
             5'h08  : reg_data_out <= slv_reg8;
             5'h09  : reg_data_out <= slv_reg9;
-            5'h0A  : reg_data_out <= slv_reg10;
-            5'h0B  : reg_data_out <= slv_reg11;
+            // 5'h0A  : reg_data_out <= slv_reg10;
+            5'h0A  : reg_data_out <= 32'haaaaaaaa;
+            // 5'h0B  : reg_data_out <= slv_reg11;
+            5'h0B  : reg_data_out <= debug1;
             // 5'h0C  : reg_data_out <= slv_reg12;
-            5'h0C  : reg_data_out <= debug;
+            5'h0C  : reg_data_out <= debug2;
             // 5'h0D  : reg_data_out <= slv_reg13;
-            5'h0D  : reg_data_out <= 32'habcd1234;
+            5'h0D  : reg_data_out <= 32'hbbbbbbbb;
             // 5'h0E  : reg_data_out <= slv_reg14;
             5'h0E  : reg_data_out <= read_addr_index;
             
             5'h0F  : reg_data_out <= 32'hdeadfeed;
             
-            // 5'h00  : reg_data_out <= debug_memory[511:480];
-            // 5'h01  : reg_data_out <= debug_memory[479:448];
-            // 5'h02  : reg_data_out <= debug_memory[447:416];
-            // 5'h03  : reg_data_out <= debug_memory[415:384];
-            // 5'h04  : reg_data_out <= debug_memory[383:352];
-            // 5'h05  : reg_data_out <= debug_memory[351:320];
-            // 5'h06  : reg_data_out <= debug_memory[319:288];
-            // 5'h07  : reg_data_out <= debug_memory[287:256];
-            // 5'h08  : reg_data_out <= debug_memory[255:224];
-            // 5'h09  : reg_data_out <= debug_memory[223:192];
-            // 5'h0A  : reg_data_out <= debug_memory[191:160];
-            // 5'h0B  : reg_data_out <= debug_memory[159:128];
-            // 5'h0C  : reg_data_out <= debug_memory[127:96];
-            // 5'h0D  : reg_data_out <= debug_memory[95:64];
-            // 5'h0E  : reg_data_out <= debug_memory[63:32];
-            // 5'h0F  : reg_data_out <= debug_memory[31:0];
-
             5'h10  : reg_data_out <= keccak_hash_reg[511:480];
             5'h11  : reg_data_out <= keccak_hash_reg[479:448];
             5'h12  : reg_data_out <= keccak_hash_reg[447:416];
@@ -794,28 +778,15 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
    
    assign           NUMBER_BYTES    = slv_reg2[15:0];
    assign           START_ADDRESS   = slv_reg3[31:0];
-
-//    keccak KECCAK_TOP( 
-//         .clk(keccak_clk),
-//         .reset(keccak_reset | keccak_rst),
-//         .in(keccak_in),
-//         .in_ready(IN_READY),
-//         .is_last(IS_LAST),
-//         .byte_num(BYTE_NUM),
-//         .buffer_full(BUFFER_FULL),
-//         .out(keccak_hash_reg),
-//         .out_ready(SHA3_DONE)
-//     );
      
     dfsm dfsm(
         .clk(keccak_clk),
         .reset(keccak_reset | keccak_rst),
-        .keccak_input(keccak_in),                     // Output to Keccak
-        .in_ready(IN_READY),                // Output to Keccak
-        .is_last(IS_LAST),                  // Output to Keccak
-        .byte_num(BYTE_NUM),                // Output to Keccak
-        .buffer_full(BUFFER_FULL),          // Input to DFSM
+
         .start(SHA3_START),
+
+        .keccak_in_ready(IN_READY),                // Output to Keccak
+        .keccak_is_last(IS_LAST),                  // Output to Keccak
         
         // user signals
         .ocm_data_out(ocm_data_out),
@@ -825,8 +796,14 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .init_master_txn(init_master_txn),
         .read_done(TXN_DONE),
         .read_active(read_active),
-        .keccak_hash_reg(keccak_hash_reg), // TODO remove
-        .debug_memory(debug_memory)
+
+        .number_bytes(NUMBER_BYTES),
+
+        .debug1(debug1),
+        .debug2(debug2),
+
+        .keccak_hash_reg(keccak_hash_reg),
+        .out_ready(SHA3_DONE)
     );
 
     // User logic ends

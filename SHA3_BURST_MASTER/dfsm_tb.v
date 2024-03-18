@@ -13,12 +13,9 @@ module dfsm_tb;
 reg clk;
 reg rst;
 
-wire [63:0] keccak_input;
 wire in_ready;
 wire is_last;
 wire read_data;
-wire [2:0] byte_num;
-reg buffer_full;
 reg start;
 reg [127:0] ocm_data_out;
 reg bus_data_valid;
@@ -32,12 +29,11 @@ wire [64*8-1:0] debug_memory;
 dfsm my_dfsm (
     .clk(clk),
     .reset(rst),
-    .keccak_input(keccak_input),
+
+    .start(start),
+
     .in_ready(in_ready),
     .is_last(is_last),
-    .byte_num(byte_num),
-    .buffer_full(buffer_full),
-    .start(start),
 
     .ocm_data_out(ocm_data_out),
     .bus_data_valid(bus_data_valid),
@@ -45,6 +41,10 @@ dfsm my_dfsm (
     .read_addr_index(read_addr_index),
     .init_master_txn(init_master_txn),
     .read_done(read_done),
+    .read_active(read_active),
+    
+    .number_bytes(16'd0),
+
     .keccak_hash_reg(keccak_hash_reg),
     .debug_memory(debug_memory)
 );
