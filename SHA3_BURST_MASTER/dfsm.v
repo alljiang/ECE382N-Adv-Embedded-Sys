@@ -52,14 +52,14 @@ module dfsm (
 
     always @(posedge clk) begin
         if (reset) begin
-           read_addr_index <= 0; //todo fix
+           read_addr_index <= 0;
            read_state <= 2'b10;
            init_master_txn <= 0;
         end
         else begin
             case (read_state)
                 2'b0: begin
-                    if (read_addr_index < 2) begin
+                    if (read_addr_index < 4) begin
                         init_master_txn <= 1;
                         read_state <= 2'b1;
                     end

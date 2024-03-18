@@ -27,7 +27,7 @@ module Bus_FIFO #(parameter depth=32)
 
     initial begin
         // all 1s
-        read_data = 64'hFFFFFFFFFFFFFFFF;
+        read_data = 64'hAAAABBBBCCCCDDDD;
     end
     
     always @(posedge clk) begin
