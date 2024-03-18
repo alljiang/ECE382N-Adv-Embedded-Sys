@@ -865,7 +865,7 @@
     reg [31:0] captured_address;
     assign debug = captured_address;
 
-    always @(posedge clk) begin
+    always @(posedge M_AXI_ACLK) begin
         if (M_AXI_ARESETN == 0) begin
             captured_address <= 32'hABCD1234;
         end else if (M_AXI_ARVALID && M_AXI_ARREADY) begin
