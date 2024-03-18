@@ -127,7 +127,7 @@
         .dfsm_read_ready(dfsm_read_ready),
         .read_addr_index(read_addr_index),
         .init_master_txn(init_master_txn),
-        .read_active(read_active)
+        .read_active(read_active),
         .TXN_DONE(TXN_DONE),
 
 	    .SHA3_DONE(SHA3_DONE),
@@ -179,7 +179,7 @@
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
         .read_addr_index(read_addr_index),
-        .read_active(read_active)
+        .read_active(read_active),
         .TXN_DONE(TXN_DONE),
         
         .debug(debug),
