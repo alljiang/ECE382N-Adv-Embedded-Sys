@@ -20,7 +20,7 @@ module dfsm (
 
     input wire [15:0] number_bytes,
 
-    output reg [511:0] keccak_hash_reg,
+    output wire [511:0] keccak_hash_reg,
     output wire [31:0] debug1,
     output wire [31:0] debug2,
     output wire out_ready
@@ -32,7 +32,6 @@ module dfsm (
     reg is_last;
     reg [2:0] byte_num;
     wire buffer_full;
-    wire read_active;
     assign keccak_in_ready = in_ready;
     assign keccak_is_last = is_last;
 
@@ -118,7 +117,6 @@ module dfsm (
     always @(posedge clk) begin
         if (reset) begin
             // all 1s using {} syntax
-            keccak_hash_reg <= {64{8'b11000011}};
             state <= 4'd0;
             fifo_read_en <= 0;
             bytes_to_process <= 0;
@@ -188,8 +186,8 @@ module dfsm (
 
     assign debug1[31:0] = {
         bytes_to_read,
-        bytes_to_process,
-    }
+        bytes_to_process
+    };
 
     assign debug2[31:0] = {
         3'b0, fifo_empty,
@@ -200,7 +198,7 @@ module dfsm (
         3'b0, in_ready,
         3'b0, is_last,
         1'b0, byte_num,
-        state,
-    }
+        state
+    };
 
  endmodule
