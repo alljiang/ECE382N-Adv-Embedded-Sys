@@ -814,6 +814,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .is_last(IS_LAST),                  // Output to Keccak
         .byte_num(BYTE_NUM),                // Output to Keccak
         .buffer_full(BUFFER_FULL),          // Input to DFSM
+        .start(start),
         
         // user signals
         .ocm_data_out(ocm_data_out),
