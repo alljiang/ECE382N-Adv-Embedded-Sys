@@ -147,6 +147,8 @@ module dfsm (
                     end
                 end
                 4'd1: begin
+                    in_ready <= 0;
+                    
                     if (~fifo_empty && bytes_to_process > 0 && ~buffer_full) begin
                         fifo_read_en <= 1;
 
@@ -155,7 +157,6 @@ module dfsm (
                 end
                 4'd2: begin
                     fifo_read_en <= 0;
-                    in_ready <= 1;
                     state <= 4'd3;
 
                     if (bytes_to_process <= 8) begin
@@ -172,7 +173,7 @@ module dfsm (
                     end
                 end
                 4'd3: begin
-                    in_ready <= 0;
+                    in_ready <= 1;
                     
                     if (is_last) begin
                         state <= 4'd4;
@@ -183,6 +184,8 @@ module dfsm (
                     end
                 end
                 4'd4: begin
+                    in_ready <= 0;
+
                     // wait for out_ready
                     if (out_ready) begin
                         state <= 4'd5;
