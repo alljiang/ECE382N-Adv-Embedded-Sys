@@ -83,30 +83,31 @@ module dfsm (
         end
         else begin
             case (read_state)
-                2'b0: begin
+                2'b00: begin
                     if (bytes_to_read >= 0) begin
                         init_master_txn <= 1;
                         test_count <= test_count + 1;
+
                         if (bytes_to_read <= 16)
                             bytes_to_read <= 0;
                         else
                             bytes_to_read <= bytes_to_read - 16;
 
-                        read_state <= 2'b1;
+                        read_state <= 2'b01;
                     end
                     else
-                        read_state <= 2'b0;
+                        read_state <= 2'b00;
                 end
-                2'b1: begin
+                2'b01: begin
                     init_master_txn <= 0;
                     if (read_active)
                         read_state <= 2'b10;
                     else
-                        read_state <= 2'b1;
+                        read_state <= 2'b01;
                 end
                 2'b10: begin
                     if (read_done) begin
-                        read_state <= 2'b0;
+                        read_state <= 2'b00;
                         read_addr_index <= read_addr_index + 1;
                     end
                     else
@@ -114,7 +115,7 @@ module dfsm (
                 end
                 2'b11: begin
                     if (start) begin
-                        read_state <= 1'b0;
+                        read_state <= 2'b00;
                         bytes_to_read <= number_bytes;
                     end
                     else
