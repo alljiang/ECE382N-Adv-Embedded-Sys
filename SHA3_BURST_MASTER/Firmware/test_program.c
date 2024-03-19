@@ -201,7 +201,7 @@ main() {
 		}
 	}
 
-	test_string_length = 0;
+	test_string_length = 8;
 
 	// set NUMBER_BYTES
 	burst_regs[2] = test_string_length;

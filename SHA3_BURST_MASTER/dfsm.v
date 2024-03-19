@@ -57,8 +57,7 @@ module dfsm (
    keccak KECCAK_TOP( 
         .clk(clk),
         .reset(reset),
-        // .in(fifo_read_data),
-        .in(64'h48656C6C6F313233),
+        .in(fifo_read_data),
         .in_ready(in_ready),
         .is_last(is_last),
         .byte_num(byte_num),
@@ -71,6 +70,7 @@ module dfsm (
 
     reg [1:0] read_state;
     reg [15:0] bytes_to_read;
+    reg [15:0] test_count;
 
     // this state machine will read words from the bus_fifo
     always @(posedge clk) begin
@@ -79,38 +79,46 @@ module dfsm (
             read_state <= 2'b11;
             init_master_txn <= 0;
             bytes_to_read <= 0;
+            test_count <= 0;
         end
         else begin
             case (read_state)
                 2'b0: begin
                     if (bytes_to_read >= 0) begin
                         init_master_txn <= 1;
-                        if (bytes_to_read <= 16) begin
+                        test_count <= test_count + 1;
+                        if (bytes_to_read <= 16)
                             bytes_to_read <= 0;
-                        end
-                        else begin
+                        else
                             bytes_to_read <= bytes_to_read - 16;
-                        end
+
                         read_state <= 2'b1;
                     end
+                    else
+                        read_state <= 2'b0;
                 end
                 2'b1: begin
                     init_master_txn <= 0;
-                    if (read_active) begin
+                    if (read_active)
                         read_state <= 2'b10;
-                    end
+                    else
+                        read_state <= 2'b1;
                 end
                 2'b10: begin
                     if (read_done) begin
                         read_state <= 2'b0;
                         read_addr_index <= read_addr_index + 1;
                     end
+                    else
+                        read_state <= 2'b10;
                 end
                 2'b11: begin
                     if (start) begin
                         read_state <= 1'b0;
                         bytes_to_read <= number_bytes;
                     end
+                    else
+                        read_state <= 2'b11;
                 end
                 default: begin
                 end
@@ -191,7 +199,7 @@ module dfsm (
 
     assign debug1[31:0] = {
         bytes_to_read,
-        bytes_to_process
+        test_count
     };
 
     assign debug2[31:0] = {
@@ -203,7 +211,7 @@ module dfsm (
         3'b0, in_ready,
         3'b0, is_last,
         1'b0, byte_num,
-        state
+        2'b0, read_state
     };
 
  endmodule
