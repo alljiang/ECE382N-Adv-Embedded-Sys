@@ -179,9 +179,24 @@ main() {
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 
-	for (int i = 0; i < 16; i++) { ocm_regs[i] = i; }
+    char test_string[] = "The quick brown fox jumps over the lazy dog";
+    uint16_t test_string_length = sizeof(test_string) - 1;
 
-    // reset
+	for (int i = 0; i < test_string_length; i++) { 
+        if (test_string_length - i > 4) {
+            ocm_regs[i] = (test_string[i] << 24) | (test_string[i + 1] << 16) | (test_string[i + 2] << 8) | test_string[i + 3];
+            i += 3;
+        } else {
+			ocm_regs[i] = test_string[i];
+		}
+    }
+
+	// print ocm_regs
+    for (int i = 0; i < test_string_length; i++) { printf("0x%08X\n", ocm_regs[i]); }
+
+    printf("\n\n\n");
+
+	// reset
     burst_regs[0] = 0b1;
     burst_regs[0] = 0b0;
 
