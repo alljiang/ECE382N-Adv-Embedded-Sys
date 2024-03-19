@@ -57,7 +57,8 @@ module dfsm (
    keccak KECCAK_TOP( 
         .clk(clk),
         .reset(reset),
-        .in(fifo_read_data),
+        // .in(fifo_read_data),
+        .in(64'h48656C6C6F313233),
         .in_ready(in_ready),
         .is_last(is_last),
         .byte_num(byte_num),
