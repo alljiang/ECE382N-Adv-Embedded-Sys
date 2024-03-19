@@ -179,35 +179,46 @@ main() {
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 
-    char test_string[] = "The quick brown fox jumps over the lazy dog";
-    uint16_t test_string_length = sizeof(test_string) - 1;
+	char test_string[]          = "The quick brown fox jumps over the lazy dog";
+	uint16_t test_string_length = sizeof(test_string) - 1;
 
-	for (int i = 0; i < test_string_length; i++) { 
-        if (test_string_length - i > 4) {
-            ocm_regs[i] = (test_string[i] << 24) | (test_string[i + 1] << 16) | (test_string[i + 2] << 8) | test_string[i + 3];
-            i += 3;
-        } else {
-			ocm_regs[i] = test_string[i];
+	int ocm_index = 0;
+	for (int i = 0; i < test_string_length; i++) ocm_regs[i] = 0;
+
+	for (int i = 0; i < test_string_length; i++) {
+		if (test_string_length - i > 4) {
+			ocm_regs[ocm_index] =
+			    (test_string[i] << 24) | (test_string[i + 1] << 16) |
+			    (test_string[i + 2] << 8) | test_string[i + 3];
+			ocm_index++;
+			i += 3;
+		} else {
+			for (int j = 0; j < test_string_length - i; j++) {
+				ocm_regs[ocm_index] =
+				    ocm_regs[ocm_index] | (test_string[i + j] << (24 - 8 * j));
+			}
+			break;
 		}
-    }
+	}
 
-	// print ocm_regs
-    for (int i = 0; i < test_string_length; i++) { printf("0x%08X\n", ocm_regs[i]); }
+	test_string_length = 0;
 
-    printf("\n\n\n");
+	// set NUMBER_BYTES
+	burst_regs[2] = test_string_length;
 
 	// reset
-    burst_regs[0] = 0b1;
-    burst_regs[0] = 0b0;
+	burst_regs[0] = 0b1;
+	burst_regs[0] = 0b0;
 
 	// start
 	burst_regs[0] = 0b10;
 
-    usleep(1000);
+	// wait until keccak done
+	while (!(burst_regs[1] & 0b1000)) {}
 
 	for (int i = 16; i < 32; i++) { printf("0x%08X\n", burst_regs[i]); }
 
-    burst_regs[0] = 0b00;
+	burst_regs[0] = 0b00;
 
 	unmap_regs();
 }

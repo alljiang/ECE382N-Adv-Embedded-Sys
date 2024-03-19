@@ -74,9 +74,10 @@ module dfsm (
     // this state machine will read words from the bus_fifo
     always @(posedge clk) begin
         if (reset) begin
-           read_addr_index <= 0;
-           read_state <= 2'b11;
-           init_master_txn <= 0;
+            read_addr_index <= 0;
+            read_state <= 2'b11;
+            init_master_txn <= 0;
+            bytes_to_read <= 0;
         end
         else begin
             case (read_state)
@@ -120,7 +121,6 @@ module dfsm (
 
     always @(posedge clk) begin
         if (reset) begin
-            // all 1s using {} syntax
             state <= 4'd0;
             fifo_read_en <= 0;
             bytes_to_process <= 0;
