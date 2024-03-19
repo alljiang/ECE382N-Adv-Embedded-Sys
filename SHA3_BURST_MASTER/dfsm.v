@@ -84,7 +84,7 @@ module dfsm (
         else begin
             case (read_state)
                 2'b00: begin
-                    if (bytes_to_read >= 0) begin
+                    if (bytes_to_read > 0) begin
                         init_master_txn <= 1;
                         test_count <= test_count + 1;
 
