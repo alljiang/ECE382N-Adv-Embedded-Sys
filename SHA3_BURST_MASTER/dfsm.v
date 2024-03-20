@@ -53,8 +53,7 @@ module dfsm (
         .fifo_full(fifo_full),
         .fifo_half_full(fifo_half_full),
         .fifo_empty(fifo_empty),
-        .debug1(debug1),
-        .memory_debug(memory_debug)
+        .debug1(debug1)
     );
 
    keccak KECCAK_TOP( 
@@ -141,7 +140,7 @@ module dfsm (
             byte_num <= 0;
             test_count <= 0;
             debug_index <= 0;
-            debug_memory <= 0;
+            memory_debug <= 0;
         end
         else begin
             case (state)
@@ -180,7 +179,7 @@ module dfsm (
                 end
                 4'd3: begin
                     in_ready <= 0;
-                    debug_memory[debug_index+63:debug_index] <= fifo_read_data;
+                    memory_debug[debug_index +: 63] <= fifo_read_data;
                     debug_index <= debug_index + 64;
                     
                     if (is_last) begin
