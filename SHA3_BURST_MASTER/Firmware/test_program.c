@@ -214,7 +214,8 @@ main() {
 	burst_regs[0] = 0b10;
 
 	// wait until keccak done
-	while (!(burst_regs[1] & 0b1000)) {}
+	// while (!(burst_regs[1] & 0b1000)) {}
+    usleep(10000);
 
 	for (int i = 16; i < 32; i++) { printf("0x%08X\n", burst_regs[i]); }
 
