@@ -175,7 +175,6 @@ module dfsm (
                 end
                 4'd3: begin
                     in_ready <= 0;
-                    debug_index <= debug_index + 64;
                     
                     if (is_last) begin
                         state <= 4'd4;
