@@ -23,7 +23,7 @@ module dfsm (
     output wire [511:0] keccak_hash_reg,
     output wire [31:0] debug1,
     output wire [31:0] debug2,
-    output wire [64*8-1:0] memory_debug,
+    output reg [64*8-1:0] memory_debug,
     output wire out_ready
 );
 
@@ -129,6 +129,7 @@ module dfsm (
     end
 
     reg [15:0] bytes_to_process;
+    reg [15:0] debug_index;
 
     always @(posedge clk) begin
         if (reset) begin
@@ -139,6 +140,8 @@ module dfsm (
             is_last <= 0;
             byte_num <= 0;
             test_count <= 0;
+            debug_index <= 0;
+            debug_memory <= 0;
         end
         else begin
             case (state)
@@ -177,6 +180,8 @@ module dfsm (
                 end
                 4'd3: begin
                     in_ready <= 0;
+                    debug_memory[debug_index+63:debug_index] <= fifo_read_data;
+                    debug_index <= debug_index + 64;
                     
                     if (is_last) begin
                         state <= 4'd4;
