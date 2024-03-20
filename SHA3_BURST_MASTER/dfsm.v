@@ -52,8 +52,7 @@ module dfsm (
         .read_data(fifo_read_data),
         .fifo_full(fifo_full),
         .fifo_half_full(fifo_half_full),
-        .fifo_empty(fifo_empty),
-        .debug1(debug1)
+        .fifo_empty(fifo_empty)
     );
 
    keccak KECCAK_TOP( 
@@ -128,6 +127,7 @@ module dfsm (
     end
 
     reg [15:0] bytes_to_process;
+    reg [15:0] debug_index;
 
     always @(posedge clk) begin
         if (reset) begin
@@ -138,6 +138,8 @@ module dfsm (
             is_last <= 0;
             byte_num <= 0;
             test_count <= 0;
+            debug_index <= 0;
+            memory_debug <= 0;
         end
         else begin
             case (state)
@@ -176,6 +178,7 @@ module dfsm (
                 end
                 4'd3: begin
                     in_ready <= 0;
+                    memory_debug[debug_index +: 63] <= fifo_read_data;
                     debug_index <= debug_index + 64;
                     
                     if (is_last) begin
@@ -199,30 +202,6 @@ module dfsm (
                 default: begin
                 end
             endcase
-        end
-    end
-
-    reg [15:0] debug_index;
-    always @(posedge clk) begin
-        if (reset) begin
-            memory_debug <= 0;
-            debug_index <= 0;
-        end
-        else begin
-            if (in_ready) begin
-                case (debug_index)
-                    16'd0: memory_debug[63:0] <= fifo_read_data;
-                    16'd1: memory_debug[127:64] <= fifo_read_data;
-                    16'd2: memory_debug[191:128] <= fifo_read_data;
-                    16'd3: memory_debug[255:192] <= fifo_read_data;
-                    16'd4: memory_debug[319:256] <= fifo_read_data;
-                    16'd5: memory_debug[383:320] <= fifo_read_data;
-                    16'd6: memory_debug[447:384] <= fifo_read_data;
-                    16'd7: memory_debug[511:448] <= fifo_read_data;
-                    default: begin end
-                endcase
-                debug_index <= debug_index + 1;
-            end
         end
     end
 
