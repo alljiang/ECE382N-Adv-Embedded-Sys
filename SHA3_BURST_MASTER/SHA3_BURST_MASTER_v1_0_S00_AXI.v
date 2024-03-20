@@ -697,6 +697,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     end    
     wire [31:0] debug1; // TODO remove
     wire [31:0] debug2; // TODO remove
+    wire [8*64-1:0] memory_debug; // TODO remove
     // Implement memory mapped register select and read logic generation
     // Slave register read enable is asserted when valid address is available
     // and the slave is ready to accept the read address.
@@ -731,23 +732,40 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h0E  : reg_data_out <= read_addr_index;
             
             5'h0F  : reg_data_out <= 32'hdeadfeed;
+
+            5'h10  : reg_data_out <= debug_memory[511:480];
+            5'h11  : reg_data_out <= debug_memory[479:448];
+            5'h12  : reg_data_out <= debug_memory[447:416];
+            5'h13  : reg_data_out <= debug_memory[415:384];
+            5'h14  : reg_data_out <= debug_memory[383:352];
+            5'h15  : reg_data_out <= debug_memory[351:320];
+            5'h16  : reg_data_out <= debug_memory[319:288];
+            5'h17  : reg_data_out <= debug_memory[287:256];
+            5'h18  : reg_data_out <= debug_memory[255:224];
+            5'h19  : reg_data_out <= debug_memory[223:192];
+            5'h1A  : reg_data_out <= debug_memory[191:160];
+            5'h1B  : reg_data_out <= debug_memory[159:128];
+            5'h1C  : reg_data_out <= debug_memory[127:96];
+            5'h1D  : reg_data_out <= debug_memory[95:64];
+            5'h1E  : reg_data_out <= debug_memory[63:32];
+            5'h1F  : reg_data_out <= debug_memory[31:0];
             
-            5'h10  : reg_data_out <= keccak_hash_reg[511:480];
-            5'h11  : reg_data_out <= keccak_hash_reg[479:448];
-            5'h12  : reg_data_out <= keccak_hash_reg[447:416];
-            5'h13  : reg_data_out <= keccak_hash_reg[415:384];
-            5'h14  : reg_data_out <= keccak_hash_reg[383:352];
-            5'h15  : reg_data_out <= keccak_hash_reg[351:320];
-            5'h16  : reg_data_out <= keccak_hash_reg[319:288];
-            5'h17  : reg_data_out <= keccak_hash_reg[287:256];
-            5'h18  : reg_data_out <= keccak_hash_reg[255:224];
-            5'h19  : reg_data_out <= keccak_hash_reg[223:192];
-            5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
-            5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
-            5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
-            5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
-            5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
-            5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
+            // 5'h10  : reg_data_out <= keccak_hash_reg[511:480];
+            // 5'h11  : reg_data_out <= keccak_hash_reg[479:448];
+            // 5'h12  : reg_data_out <= keccak_hash_reg[447:416];
+            // 5'h13  : reg_data_out <= keccak_hash_reg[415:384];
+            // 5'h14  : reg_data_out <= keccak_hash_reg[383:352];
+            // 5'h15  : reg_data_out <= keccak_hash_reg[351:320];
+            // 5'h16  : reg_data_out <= keccak_hash_reg[319:288];
+            // 5'h17  : reg_data_out <= keccak_hash_reg[287:256];
+            // 5'h18  : reg_data_out <= keccak_hash_reg[255:224];
+            // 5'h19  : reg_data_out <= keccak_hash_reg[223:192];
+            // 5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
+            // 5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
+            // 5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
+            // 5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
+            // 5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
+            // 5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
             default : reg_data_out <= 0;
           endcase
     end
@@ -801,6 +819,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
 
         .debug1(debug1),
         .debug2(debug2),
+        .memory_debug(memory_debug),
 
         .keccak_hash_reg(keccak_hash_reg),
         .out_ready(SHA3_DONE)

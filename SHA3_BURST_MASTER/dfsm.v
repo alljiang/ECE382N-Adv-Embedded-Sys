@@ -23,6 +23,7 @@ module dfsm (
     output wire [511:0] keccak_hash_reg,
     output wire [31:0] debug1,
     output wire [31:0] debug2,
+    output wire [64*8-1:0] memory_debug,
     output wire out_ready
 );
 
@@ -51,7 +52,9 @@ module dfsm (
         .read_data(fifo_read_data),
         .fifo_full(fifo_full),
         .fifo_half_full(fifo_half_full),
-        .fifo_empty(fifo_empty)
+        .fifo_empty(fifo_empty),
+        .debug1(debug1),
+        .memory_debug(memory_debug)
     );
 
    keccak KECCAK_TOP( 
@@ -79,14 +82,12 @@ module dfsm (
             read_state <= 2'b11;
             init_master_txn <= 0;
             bytes_to_read <= 0;
-            test_count <= 0;
         end
         else begin
             case (read_state)
                 2'b00: begin
                     if (bytes_to_read > 0) begin
                         init_master_txn <= 1;
-                        test_count <= test_count + 1;
 
                         if (bytes_to_read <= 16)
                             bytes_to_read <= 0;
@@ -137,6 +138,7 @@ module dfsm (
             in_ready <= 0;
             is_last <= 0;
             byte_num <= 0;
+            test_count <= 0;
         end
         else begin
             case (state)
@@ -148,10 +150,9 @@ module dfsm (
                     end
                 end
                 4'd1: begin
-                    in_ready <= 0;
-                    
                     if (~fifo_empty && bytes_to_process > 0 && ~buffer_full) begin
                         fifo_read_en <= 1;
+                        test_count <= test_count + 1;
 
                         state <= 4'd2;
                     end
@@ -159,6 +160,7 @@ module dfsm (
                 4'd2: begin
                     fifo_read_en <= 0;
                     state <= 4'd3;
+                    in_ready <= 1;
 
                     if (bytes_to_process <= 8) begin
                         is_last <= 1;
@@ -174,7 +176,7 @@ module dfsm (
                     end
                 end
                 4'd3: begin
-                    in_ready <= 1;
+                    in_ready <= 0;
                     
                     if (is_last) begin
                         state <= 4'd4;
@@ -185,7 +187,6 @@ module dfsm (
                     end
                 end
                 4'd4: begin
-                    in_ready <= 0;
 
                     // wait for out_ready
                     if (out_ready) begin
@@ -201,10 +202,10 @@ module dfsm (
         end
     end
 
-    assign debug1[31:0] = {
-        bytes_to_read,
-        test_count
-    };
+    // assign debug1[31:0] = {
+    //     bytes_to_read,
+    //     test_count
+    // };
 
     assign debug2[31:0] = {
         3'b0, fifo_empty,
@@ -215,7 +216,7 @@ module dfsm (
         3'b0, in_ready,
         3'b0, is_last,
         1'b0, byte_num,
-        2'b0, read_state
+        state
     };
 
  endmodule
