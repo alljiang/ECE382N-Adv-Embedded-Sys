@@ -52,8 +52,7 @@ module dfsm (
         .read_data(fifo_read_data),
         .fifo_full(fifo_full),
         .fifo_half_full(fifo_half_full),
-        .fifo_empty(fifo_empty),
-        .debug1(debug1)
+        .fifo_empty(fifo_empty)
     );
 
    keccak KECCAK_TOP( 
