@@ -706,66 +706,65 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     begin
           // Address decoding for reading registers
           case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-            // 5'h00  : reg_data_out <= slv_reg0;                 // Control register
-            // 5'h01  : reg_data_out <= {28'h0,
-            //                           SHA3_DONE,
-            //                           SHA3_START,
-            //                           IN_READY,
-            //                           IS_LAST};                  
-            // 5'h02  : reg_data_out <= slv_reg2;                
-            // 5'h03  : reg_data_out <= slv_reg3;        
-            // 5'h04  : reg_data_out <= slv_reg4;     
-            // 5'h05  : reg_data_out <= slv_reg5;         
-            // 5'h06  : reg_data_out <= slv_reg6;   
-            // 5'h07  : reg_data_out <= 32'hfeedbeef;              
-            // 5'h08  : reg_data_out <= slv_reg8;
-            // 5'h09  : reg_data_out <= slv_reg9;
-            // // 5'h0A  : reg_data_out <= slv_reg10;
-            // 5'h0A  : reg_data_out <= 32'haaaaaaaa;
-            // // 5'h0B  : reg_data_out <= slv_reg11;
-            // 5'h0B  : reg_data_out <= debug1;
-            // // 5'h0C  : reg_data_out <= slv_reg12;
-            // 5'h0C  : reg_data_out <= debug2;
-            // // 5'h0D  : reg_data_out <= slv_reg13;
-            // 5'h0D  : reg_data_out <= 32'hbbbbbbbb;
-            // // 5'h0E  : reg_data_out <= slv_reg14;
-            // 5'h0E  : reg_data_out <= read_addr_index;
-            
-            // 5'h0F  : reg_data_out <= 32'hdeadfeed;
+            5'h00  : reg_data_out <= slv_reg0;                 // Control register
+            5'h01  : reg_data_out <= {28'h0,
+                                      SHA3_DONE,
+                                      SHA3_START,
+                                      IN_READY,
+                                      IS_LAST};                  
+            5'h02  : reg_data_out <= slv_reg2;                
+            5'h03  : reg_data_out <= slv_reg3;        
+            5'h04  : reg_data_out <= slv_reg4;     
+            5'h05  : reg_data_out <= slv_reg5;         
+            5'h06  : reg_data_out <= slv_reg6;   
+            5'h07  : reg_data_out <= 32'hfeedbeef;              
+            5'h08  : reg_data_out <= slv_reg8;
+            5'h09  : reg_data_out <= slv_reg9;
+            // 5'h0A  : reg_data_out <= slv_reg10;
+            5'h0A  : reg_data_out <= 32'haaaaaaaa;
+            // 5'h0B  : reg_data_out <= slv_reg11;
+            5'h0B  : reg_data_out <= debug1;
+            // 5'h0C  : reg_data_out <= slv_reg12;
+            5'h0C  : reg_data_out <= debug2;
+            // 5'h0D  : reg_data_out <= slv_reg13;
+            5'h0D  : reg_data_out <= 32'hbbbbbbbb;
+            // 5'h0E  : reg_data_out <= slv_reg14;
+            5'h0E  : reg_data_out <= read_addr_index;
+            5'h0F  : reg_data_out <= 32'hdeadfeed;
 
-            5'h00  : reg_data_out <= memory_debug[511:480];
-            5'h01  : reg_data_out <= memory_debug[479:448];
-            5'h02  : reg_data_out <= memory_debug[447:416];
-            5'h03  : reg_data_out <= memory_debug[415:384];
-            5'h04  : reg_data_out <= memory_debug[383:352];
-            5'h05  : reg_data_out <= memory_debug[351:320];
-            5'h06  : reg_data_out <= memory_debug[319:288];
-            5'h07  : reg_data_out <= memory_debug[287:256];
-            5'h08  : reg_data_out <= memory_debug[255:224];
-            5'h09  : reg_data_out <= memory_debug[223:192];
-            5'h0A  : reg_data_out <= memory_debug[191:160];
-            5'h0B  : reg_data_out <= memory_debug[159:128];
-            5'h0C  : reg_data_out <= memory_debug[127:96];
-            5'h0D  : reg_data_out <= memory_debug[95:64];
-            5'h0E  : reg_data_out <= memory_debug[63:32];
-            5'h0F  : reg_data_out <= memory_debug[31:0];
+            5'h10  : reg_data_out <= memory_debug[511:480];
+            5'h11  : reg_data_out <= memory_debug[479:448];
+            5'h12  : reg_data_out <= memory_debug[447:416];
+            5'h13  : reg_data_out <= memory_debug[415:384];
+            5'h14  : reg_data_out <= memory_debug[383:352];
+            5'h15  : reg_data_out <= memory_debug[351:320];
+            5'h16  : reg_data_out <= memory_debug[319:288];
+            5'h17  : reg_data_out <= memory_debug[287:256];
+            5'h18  : reg_data_out <= memory_debug[255:224];
+            5'h19  : reg_data_out <= memory_debug[223:192];
+            5'h1A  : reg_data_out <= memory_debug[191:160];
+            5'h1B  : reg_data_out <= memory_debug[159:128];
+            5'h1C  : reg_data_out <= memory_debug[127:96];
+            5'h1D  : reg_data_out <= memory_debug[95:64];
+            5'h1E  : reg_data_out <= memory_debug[63:32];
+            5'h1F  : reg_data_out <= memory_debug[31:0];
             
-            5'h10  : reg_data_out <= keccak_hash_reg[511:480];
-            5'h11  : reg_data_out <= keccak_hash_reg[479:448];
-            5'h12  : reg_data_out <= keccak_hash_reg[447:416];
-            5'h13  : reg_data_out <= keccak_hash_reg[415:384];
-            5'h14  : reg_data_out <= keccak_hash_reg[383:352];
-            5'h15  : reg_data_out <= keccak_hash_reg[351:320];
-            5'h16  : reg_data_out <= keccak_hash_reg[319:288];
-            5'h17  : reg_data_out <= keccak_hash_reg[287:256];
-            5'h18  : reg_data_out <= keccak_hash_reg[255:224];
-            5'h19  : reg_data_out <= keccak_hash_reg[223:192];
-            5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
-            5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
-            5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
-            5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
-            5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
-            5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
+            // 5'h10  : reg_data_out <= keccak_hash_reg[511:480];
+            // 5'h11  : reg_data_out <= keccak_hash_reg[479:448];
+            // 5'h12  : reg_data_out <= keccak_hash_reg[447:416];
+            // 5'h13  : reg_data_out <= keccak_hash_reg[415:384];
+            // 5'h14  : reg_data_out <= keccak_hash_reg[383:352];
+            // 5'h15  : reg_data_out <= keccak_hash_reg[351:320];
+            // 5'h16  : reg_data_out <= keccak_hash_reg[319:288];
+            // 5'h17  : reg_data_out <= keccak_hash_reg[287:256];
+            // 5'h18  : reg_data_out <= keccak_hash_reg[255:224];
+            // 5'h19  : reg_data_out <= keccak_hash_reg[223:192];
+            // 5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
+            // 5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
+            // 5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
+            // 5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
+            // 5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
+            // 5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
             default : reg_data_out <= 0;
           endcase
     end

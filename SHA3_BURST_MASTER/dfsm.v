@@ -224,10 +224,10 @@ module dfsm (
         end
     end
 
-    // assign debug1[31:0] = {
-    //     bytes_to_read,
-    //     test_count
-    // };
+    assign debug1[31:0] = {
+        test_count,
+        debug_index
+    };
 
     assign debug2[31:0] = {
         3'b0, fifo_empty,
