@@ -207,19 +207,29 @@ module dfsm (
             debug_index <= 0;
         end
         else begin
-            if (in_ready) begin
-                case (debug_index)
-                    16'd0: memory_debug[63:0] <= fifo_read_data;
-                    16'd1: memory_debug[127:64] <= fifo_read_data;
-                    16'd2: memory_debug[191:128] <= fifo_read_data;
-                    16'd3: memory_debug[255:192] <= fifo_read_data;
-                    16'd4: memory_debug[319:256] <= fifo_read_data;
-                    16'd5: memory_debug[383:320] <= fifo_read_data;
-                    16'd6: memory_debug[447:384] <= fifo_read_data;
-                    16'd7: memory_debug[511:448] <= fifo_read_data;
-                    default: begin end
-                endcase
-                debug_index <= debug_index + 1;
+            // if (in_ready) begin
+            //     case (debug_index)
+            //         16'd0: memory_debug[63:0] <= fifo_read_data;
+            //         16'd1: memory_debug[127:64] <= fifo_read_data;
+            //         16'd2: memory_debug[191:128] <= fifo_read_data;
+            //         16'd3: memory_debug[255:192] <= fifo_read_data;
+            //         16'd4: memory_debug[319:256] <= fifo_read_data;
+            //         16'd5: memory_debug[383:320] <= fifo_read_data;
+            //         16'd6: memory_debug[447:384] <= fifo_read_data;
+            //         16'd7: memory_debug[511:448] <= fifo_read_data;
+            //         default: begin end
+            //     endcase
+            //     debug_index <= debug_index + 1;
+            // end
+            if (in_ready && is_last) begin
+                memory_debug[63:0] <= fifo_read_data;
+                memory_debug[127:64] <= byte_num;
+                memory_debug[191:128] <= bytes_to_process;
+                memory_debug[255:192] <= bytes_to_read;
+                memory_debug[319:256] <= test_count;
+                memory_debug[383:320] <= state;
+                memory_debug[447:384] <= read_addr_index;
+                memory_debug[511:448] <= 64'h01230123;
             end
         end
     end
