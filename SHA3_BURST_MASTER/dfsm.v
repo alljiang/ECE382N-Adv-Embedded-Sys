@@ -154,13 +154,16 @@ module dfsm (
 
                         state <= 4'd2;
                     end
+                    else if (bytes_to_process == 0 && ~buffer_full) begin
+                        state <= 4'd2;
+                    end
                 end
                 4'd2: begin
                     fifo_read_en <= 0;
                     state <= 4'd3;
                     in_ready <= 1;
 
-                    if (bytes_to_process <= 8) begin
+                    if (bytes_to_process < 8) begin
                         is_last <= 1;
                     end
 
