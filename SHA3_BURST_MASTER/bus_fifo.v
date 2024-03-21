@@ -62,8 +62,8 @@ module Bus_FIFO #(parameter depth=32)
         else begin
             if (write_en & !fifo_full) begin
                 write_ptr <= write_ptr + 2;
-                memory[write_ptr] <= write_data[127:64];
-                memory[write_ptr+1] <= write_data[63:0];
+                memory[write_ptr] <= write_data[63:0];
+                memory[write_ptr+1] <= write_data[127:64];
             end
         end
     
