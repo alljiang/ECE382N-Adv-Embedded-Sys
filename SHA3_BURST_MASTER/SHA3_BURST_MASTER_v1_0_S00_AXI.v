@@ -732,7 +732,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h0E  : reg_data_out <= read_addr_index;
             5'h0F  : reg_data_out <= 32'hdeadfeed;
 
-            5'h10  : reg_data_out <= memory_debug[511:480];
+            // 5'h10  : reg_data_out <= memory_debug[511:480];
             5'h11  : reg_data_out <= memory_debug[479:448];
             5'h12  : reg_data_out <= memory_debug[447:416];
             5'h13  : reg_data_out <= memory_debug[415:384];
@@ -749,7 +749,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h1E  : reg_data_out <= memory_debug[63:32];
             5'h1F  : reg_data_out <= memory_debug[31:0];
             
-            // 5'h10  : reg_data_out <= keccak_hash_reg[511:480];
+            5'h10  : reg_data_out <= keccak_hash_reg[511:480];
             // 5'h11  : reg_data_out <= keccak_hash_reg[479:448];
             // 5'h12  : reg_data_out <= keccak_hash_reg[447:416];
             // 5'h13  : reg_data_out <= keccak_hash_reg[415:384];
