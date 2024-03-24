@@ -1,4 +1,5 @@
 
+#include <malloc.h>
 #include <fcntl.h>
 #include <math.h>
 #include <signal.h>
@@ -30,8 +31,7 @@ uint32_t timer_value;
 void
 sighandler(int signo) {
 	if (signo == SIGIO) {
-        printf("sighandler\n");
-		uint32_t timer_value = timer_regs[2] * 1000 / 150;  // convert to ns
+		timer_value = timer_regs[2] * 1000 / 150;  // convert to ns
 	}
 
 	return; /* Return to main loop */
@@ -221,7 +221,7 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 }
 
 int
-main() {
+main(int argc, char *argv[]) {
 	srand(time(0));
 
 	if (map_regs() == -1) {
@@ -229,11 +229,41 @@ main() {
 		return 1;
 	}
 
+    if (argc != 3) {
+        printf("Usage: -s \"string\" or -f \"file.txt\"\n");
+        return 1;    
+    }
+
+    if (strcmp(argv[1], "-s") != 0 && strcmp(argv[1], "-f") != 0) {
+        printf("Usage: -s \"string\" or -f \"file.txt\"\n");
+        return 1;
+    }
+
+    char *test_string;
+    uint16_t test_string_length;
+    if (strcmp(argv[1], "-s") == 0) {
+        printf("String: \'%s\'\n", argv[2]);
+		test_string_length = strlen(argv[2]);
+        test_string = argv[2];
+	} else {
+        printf("File: %s\n", argv[2]);
+        FILE *file = fopen(argv[2], "r");
+        if (file == NULL) {
+            printf("Error opening file\n");
+            return 1;
+        }
+
+        fseek(file, 0, SEEK_END);
+        test_string_length = ftell(file);
+
+        test_string = malloc(test_string_length);
+        fseek(file, 0, SEEK_SET);
+        fread(test_string, 1, test_string_length, file);
+        fclose(file);
+    }
+
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_150_MHZ);
 	setup_capture_timer_interrupt();
-
-	char test_string[]          = "The quick brown fox jumps over the lazy dog";
-	uint16_t test_string_length = sizeof(test_string) - 1;
 
 	int ocm_index = 0;
 	for (int i = 0; i < test_string_length; i++) ocm_regs[i] = 0;
@@ -268,7 +298,7 @@ main() {
 	while (!(burst_regs[1] & 0b1000)) {}
 
 	for (int i = 16; i < 32; i++) { printf("0x%08X\n", burst_regs[i]); }
-	printf("Timer value: %d\n", timer_value);
+	printf("\nTimer value: %d nanoseconds\n", timer_value);
 
 	burst_regs[0] = 0b00;
 

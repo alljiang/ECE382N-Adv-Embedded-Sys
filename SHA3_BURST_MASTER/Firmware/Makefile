@@ -28,17 +28,13 @@ PWD   := $(shell pwd)
 
 default:
 	$(MAKE) -j4 -C $(KDIR) M=$(PWD) modules
-	$(CC)  test_program.c -o test_program -lm
+	$(CC)  test_keccak-512.c -o test_keccak-512 -lm
 
 #csv:
 #	$(CC)  intr_latency_csv.c -o intr_latency_csv
 
-gdb: 
-	$(MAKE) -C $(KDIR) M=$(PWD) modules
-	$(CC)  test_program.c -g -DDEBUG -o test_program_gdb
 	
 clean::
-	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe test_program
-	$(RM)  test_program_gdb 
+	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe test_keccak-512
 	$(RM) -R .tmp*
 

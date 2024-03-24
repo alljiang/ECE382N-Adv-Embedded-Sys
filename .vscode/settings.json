@@ -8,6 +8,8 @@
         "types.h": "c",
         "time.h": "c",
         "stat.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "math.h": "c",
+        "fcntl.h": "c"
     }
 }
