@@ -1,9 +1,12 @@
 
 #include <fcntl.h>
+#include <math.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -21,6 +24,55 @@ uint32_t *pl_clk_reg;
 #define ADDRESS_OCM 0xFFFC0000
 #define ADDRESS_BURST_MASTER_SLAVE 0xB0000000
 #define ADDRESS_CAPTURE_TIMER_SLAVE 0xB0002000
+
+uint32_t timer_value;
+
+void
+sighandler(int signo) {
+	if (signo == SIGIO) {
+        printf("sighandler\n");
+		uint32_t timer_value = timer_regs[2] * 1000 / 150;  // convert to ns
+	}
+
+	return; /* Return to main loop */
+}
+
+void
+setup_capture_timer_interrupt() {
+	struct sigaction action;
+	int fc, fd;
+
+	sigemptyset(&action.sa_mask);
+	sigaddset(&action.sa_mask, SIGIO);
+
+	action.sa_handler = sighandler;
+	action.sa_flags   = 0;
+
+	sigaction(SIGIO, &action, NULL);
+
+	fd = open("/dev/timer_int", O_RDWR);
+
+	if (fd == -1) {
+		perror("Unable to open /dev/timer_int");
+		exit(-1);
+	}
+
+	printf("/dev/timer_int opened successfully \n");
+
+	fc = fcntl(fd, F_SETOWN, getpid());
+
+	if (fc == -1) {
+		perror("SETOWN failed\n");
+		exit(-1);
+	}
+
+	fc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_ASYNC);
+
+	if (fc == -1) {
+		perror("SETFL failed\n");
+		exit(-1);
+	}
+}
 
 int
 map_regs() {
@@ -178,6 +230,7 @@ main() {
 	}
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_150_MHZ);
+	setup_capture_timer_interrupt();
 
 	char test_string[]          = "The quick brown fox jumps over the lazy dog";
 	uint16_t test_string_length = sizeof(test_string) - 1;
@@ -213,9 +266,9 @@ main() {
 
 	// wait until keccak done
 	while (!(burst_regs[1] & 0b1000)) {}
-    usleep(10000);
 
 	for (int i = 16; i < 32; i++) { printf("0x%08X\n", burst_regs[i]); }
+	printf("Timer value: %d\n", timer_value);
 
 	burst_regs[0] = 0b00;
 

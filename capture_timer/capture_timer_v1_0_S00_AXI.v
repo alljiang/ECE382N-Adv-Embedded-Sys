@@ -84,8 +84,6 @@
 		input wire  S_AXI_RREADY
 	);
 
-    wire capture_gate;
-    wire capture_gate_sync;
     wire timer_enable;
     wire timer_enable_sync;
 
@@ -382,7 +380,7 @@
 	begin
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-	        2'h0   : reg_data_out <= {{16'hBEAD},{14'b0},{capture_complete},{capture_gate}};
+	        2'h0   : reg_data_out <= {{16'hBEAD},{14'b0},{capture_complete},{SHA3_DONE}};
 	        2'h1   : reg_data_out <= slv_reg1;
 	        2'h2   : reg_data_out <= cap_timer_out;
 	        2'h3   : reg_data_out <= {{29'b0},{state}};
@@ -411,7 +409,7 @@
 
 	// Add user logic here
 	
-	assign interrupt_out = slv_reg1[0];
+	assign interrupt_out = capture_complete;
 	assign timer_enable = slv_reg1[1];
 
     localparam RESET = 3'b111; 

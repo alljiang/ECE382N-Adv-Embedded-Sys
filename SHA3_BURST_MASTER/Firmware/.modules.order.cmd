@@ -1,0 +1,1 @@
+cmd_/home/ee382n/ECE382N-Adv-Embedded-Sys/SHA3_BURST_MASTER/Firmware/modules.order := {   echo /home/ee382n/ECE382N-Adv-Embedded-Sys/SHA3_BURST_MASTER/Firmware/timer_interrupt.ko; :; } | awk '!x[$$0]++' - > /home/ee382n/ECE382N-Adv-Embedded-Sys/SHA3_BURST_MASTER/Firmware/modules.order
