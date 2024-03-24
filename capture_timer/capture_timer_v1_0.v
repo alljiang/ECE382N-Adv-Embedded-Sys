@@ -1,4 +1,4 @@
-ECE
+
 `timescale 1 ns / 1 ps
 
 	module capture_timer_v1_0 #
