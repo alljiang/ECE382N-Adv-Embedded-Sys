@@ -4,11 +4,6 @@
 	module capture_timer_v1_0_S00_AXI #
 	(
 		// Users to add parameters here
-			/* FSM state definitions */
-	    parameter RESET =2'b00,
-	    parameter COUNT = 2'b01,
-	    parameter WAIT = 2'b10,
-	    parameter IDLE = 2'b11,
 
 		// User parameters ends
 		// Do not modify the parameters beyond this line
@@ -20,10 +15,10 @@
 	)
 	(
 		// Users to add ports here
-        input wire capture_gate,       // Input interrupt from CDMA
-        output wire interrupt_out,  // Output interrupt to PS
-       
-        
+        input wire SHA3_DONE,           // Input from SHA-3
+        input wire SHA3_START,          // Input from SHA-3
+        output wire interrupt_out,      // Output interrupt to PS
+
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -88,9 +83,15 @@
     		// accept the read data and response information.
 		input wire  S_AXI_RREADY
 	);
-	
-	
-	/* User Reg and Wires end */
+
+    wire capture_gate;
+    wire capture_gate_sync;
+    wire timer_enable;
+    wire timer_enable_sync;
+
+    reg capture_complete;
+    reg [2:0] state;
+    reg [31:0] cap_timer_out;
 
 	// AXI4LITE signals
 	reg [C_S_AXI_ADDR_WIDTH-1 : 0] 	axi_awaddr;
@@ -124,25 +125,6 @@
 	reg [C_S_AXI_DATA_WIDTH-1:0]	 reg_data_out;
 	integer	 byte_index;
 	reg	 aw_en;
-	
-	
-	/* USER REG and Wires */
-	/* timer_enable signal read from slv_reg1[7] */
-	wire timer_enable;
-	assign timer_enable = slv_reg1[1];
-	
-	/* Register holding caputre interupt timing */
-	reg [31:0] global_count;
-	/* Assert when timer is done (cdma interrupt is processed by timer) */
-	wire capture_complete;  //TODO: Not sure why this signal is needed - ask McDermott
-	
-	/* Tie interupt_out to a register bit */
-	assign interrupt_out = slv_reg1[0];
-		
-	/* FSM Control <- Current state */
-	reg[1:0] current_state;
-
-	/* USER REG and Wires ends */
 
 	// I/O Connections assignments
 
@@ -400,10 +382,10 @@
 	begin
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-	        2'h0   : reg_data_out <= {16'hBEAD, 8'b0, 3'b0, capture_complete, 3'b0, capture_gate};  //Concat to other data with wires/control signals and debug signals
-	        2'h1   : reg_data_out <= {16'hFEED, 11'h0, timer_enable, 3'b0, interrupt_out}; // Read timer_enable signal and ct_interrupt_out signal (mostly debug)
-	        2'h2   : reg_data_out <= global_count[31:0];                              //Read capture_timer count value
-	        2'h3   : reg_data_out <= {28'h5555_CAB, 2'b00, current_state};            // Read state and debug values
+	        2'h0   : reg_data_out <= {{16'hBEAD},{14'b0},{capture_complete},{capture_gate}};
+	        2'h1   : reg_data_out <= slv_reg1;
+	        2'h2   : reg_data_out <= cap_timer_out;
+	        2'h3   : reg_data_out <= {{29'b0},{state}};
 	        default : reg_data_out <= 0;
 	      endcase
 	end
@@ -429,64 +411,57 @@
 
 	// Add user logic here
 	
-	assign capture_complete = interrupt_out;
-	
-	/* Manage reset and control next states */
-	always@(posedge S_AXI_ACLK) 
-	begin
-	  if ( S_AXI_ARESETN == 1'b0 )  // On reset
-	    begin
-	       current_state <= RESET;
-	       global_count <= 32'hDEADFEED;
-	    end
-	  else
-	    begin
-	      case(current_state)
-	        RESET:
-	          begin
-	            // If timer_enable, next state is count
-	            if(slv_reg1[1] == 1 || timer_enable == 1)
-	               begin
-	                   current_state <= COUNT;
-	                   global_count <= 0;
-	               end
-	            // else, stay in same state
-	            else current_state <= RESET;
-	          end
-	        WAIT: // Waiting for software to read value and clear timer_enable
-	          begin
-	            // if time_enable -> next state is wait
-	            if(slv_reg1[1] ==0 || timer_enable == 0) current_state <= IDLE;
-	            // else next_state is IDLE
-	            else current_state <= WAIT;
-	          end
-	        COUNT:
-	          begin
-	            // Count up
-	            global_count[31:0] <= global_count[31:0] + 32'b01;
-	            if(capture_gate == 1 || timer_enable == 0) //Either CDMA Finished or timer disabled
-	              begin
-	                current_state <= WAIT;
-	              end
-	            else current_state <= COUNT;  // Keep counting until CDMA asserts interrupt on capture_gate
-	          end
-	        IDLE:  // State waiting for application to start count (counter value can be read)
-	          begin
-	            if(timer_enable == 1)  // Software enabled the timer
-	              begin
-	                current_state <= COUNT;
-	                global_count <= 0;
-	              end
-	            else current_state <= IDLE;  // Stay in this state and wait for software to start timer
-	          end
-	        default:
-	          begin
-	            // Do nothing (maybe add debugging here )
-	          end
-	      endcase
-	  end
-	end
-	
+	assign interrupt_out = slv_reg1[0];
+	assign timer_enable = slv_reg1[1];
+
+    localparam RESET = 3'b111; 
+    localparam COUNT = 3'b010; 
+    localparam WAIT = 3'b011; 
+    localparam IDLE = 3'b100;
+
+    always @(posedge S_AXI_ACLK) begin
+        if (!S_AXI_ARESETN) begin
+            state <= RESET;
+            cap_timer_out <= 32'b0;
+            capture_complete <= 1'b0;
+        end 
+        else begin
+            case (state)
+                RESET: begin
+                    state <= IDLE;
+                end
+                IDLE: begin
+                    cap_timer_out <= 32'b0;
+
+                    if (!SHA3_START)
+                        state <= IDLE;
+                    else if (SHA3_START)
+                        state <= COUNT;
+                end
+                COUNT: begin
+                    cap_timer_out <= cap_timer_out + 1;
+
+                    if (SHA3_DONE) begin
+                        capture_complete <= 1'b1;   // done with capture
+
+                        state <= WAIT;
+                    end                    
+                    else
+                        state <= COUNT;
+                end
+                WAIT: begin
+                    if (!SHA3_START) begin
+                        capture_complete <= 1'b0;   // new capture, reset capture_complete
+
+                        state <= IDLE;
+                    end
+                    else
+                        state <= WAIT;
+                end
+            endcase
+        end
+            
+    end
 
 	// User logic ends
 

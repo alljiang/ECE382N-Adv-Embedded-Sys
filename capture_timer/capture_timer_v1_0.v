@@ -1,4 +1,4 @@
-
+ECE
 `timescale 1 ns / 1 ps
 
 	module capture_timer_v1_0 #
@@ -74,7 +74,8 @@
 		.S_AXI_RVALID(s00_axi_rvalid),
 		.S_AXI_RREADY(s00_axi_rready),
 		
-		.capture_gate(capture_gate),
+		.SHA3_START(SHA3_START),
+		.SHA3_DONE(SHA3_DONE),
 		.interrupt_out(interrupt_out)
 	);
 
