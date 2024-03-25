@@ -266,7 +266,9 @@ main(int argc, char *argv[]) {
 	setup_capture_timer_interrupt();
 
 	int ocm_index = 0;
-	for (int i = 0; i < test_string_length; i++) ocm_regs[i] = 0;
+	for (int i = 0; i < test_string_length; i++) {
+        ocm_regs[i] = 0;
+    }
 
 	for (int i = 0; i < test_string_length; i++) {
 		if (test_string_length - i > 4) {
