@@ -1,0 +1,35 @@
+#!/bin/sh
+# Fill OCM memory with all fffff's
+/bin/fm 0xfffc0000 0xffffffff > /dev/null
+/bin/fm 0xfffc0004 0xffffffff > /dev/null
+/bin/fm 0xfffc0008 0xffffffff > /dev/null
+/bin/fm 0xfffc000C 0xffffffff > /dev/null
+# Reset Keccak Unit
+/usr/bin/pm 0xB0000000 0x01 > /dev/null
+/usr/bin/pm 0xB0000000 0x00 > /dev/null
+# Generate hash for 16 bytes
+/usr/bin/pm 0xB0000008 16 > /dev/null
+# Start Keccak Unit"
+/usr/bin/pm 0xB0000000 0x02 > /dev/null
+/usr/bin/pm 0xB0000000 0x00 > /dev/null
+echo "Expected results:
+0xb0000040 = 0xc2d1e942
+0xb0000044 = 0x1945bdac
+0xb0000048 = 0x3aa06074
+0xb000004c = 0x8d4b7f67
+0xb0000050 = 0x7bcb22b5
+0xb0000054 = 0xa06be2e3
+0xb0000058 = 0xe1cc4a7c
+0xb000005c = 0xaa8e8b9e
+0xb0000060 = 0xddbb88a7
+0xb0000064 = 0x43c530cb
+0xb0000068 = 0x58367898
+0xb000006c = 0x8f4d5893
+0xb0000070 = 0xdc4fb0f5
+0xb0000074 = 0xaefa63b2
+0xb0000078 = 0xcd06dbf8
+0xb000007c = 0xdd1843e5
+"
+echo "Actual results:"
+# Dump memory
+ /usr/bin/dm 0xB0000040 16
