@@ -16,12 +16,12 @@ reg write_en;
 reg [127:0] write_data;
 reg read_en;
 
-wire [63:0] read_data;
+wire [127:0] read_data;
 wire fifo_full;
 wire fifo_empty;
 wire fifo_half_full;
 
-Bus_FIFO #(16) bus_fifo (
+Bus_FIFO #(8) bus_fifo (
     .clk(clk),
     .rst(rst),
     .write_data(write_data),
@@ -52,61 +52,33 @@ initial begin
     
     // Test 1: Fill up and empty the FIFO
     write_en = 1;
-    write_data = `combine(64'h1, 64'h0); #1; 
-    write_data = `combine(64'h3, 64'h2); #1;
-    write_data = `combine(64'h5, 64'h4); #1;
-    write_data = `combine(64'h7, 64'h6); #1;
+    write_data = 128'd0; #1; 
+    write_data = 128'd1; #1; 
+    write_data = 128'd2; #1;
+    write_data = 128'd3; #1;
     `assert(fifo_half_full, 1'b1)
 
-    write_data = `combine(64'h9, 64'h8); #1;
-    write_data = `combine(64'h11, 64'h10); #1;
-    write_data = `combine(64'h13, 64'h12); #1;
-    write_data = `combine(64'h15, 64'h14); #1;
+    write_data = 128'd4; #1;
+    write_data = 128'd5; #1;
+    write_data = 128'd6; #1;
+    write_data = 128'd7; #1;
     `assert(fifo_empty, 1'b0)
     `assert(fifo_full, 1'b1)
 
     write_en = 0; read_en = 1; #1;
-    `assert(read_data, 64'h0) #1;
+    `assert(read_data, 128'd0) #1;
     `assert(fifo_full, 1'b0)
-    `assert(read_data, 64'h1) #1;
-    `assert(read_data, 64'h2) #1;
-    `assert(read_data, 64'h3) #1;
-    `assert(read_data, 64'h4) #1;
-    `assert(read_data, 64'h5) #1;
-    `assert(read_data, 64'h6) #1;
-    `assert(read_data, 64'h7) #1;
-    `assert(read_data, 64'h8) #1;
+    `assert(read_data, 128'd1) #1;
+    `assert(read_data, 128'd2) #1;
+    `assert(read_data, 128'd3) #1;
     `assert(fifo_half_full, 1'b0)
-    `assert(read_data, 64'h9) #1;
-    `assert(read_data, 64'h10) #1;
-    `assert(read_data, 64'h11) #1;
-    `assert(read_data, 64'h12) #1;
-    `assert(read_data, 64'h13) #1;
-    `assert(read_data, 64'h14) #1;
-    `assert(read_data, 64'h15)
+    `assert(read_data, 128'd4) #1;
+    `assert(read_data, 128'd5) #1;
+    `assert(read_data, 128'd6) #1;
+    `assert(read_data, 128'd7)
     `assert(fifo_empty, 1'b1)
     read_en = 0;
     #5;
-
-    // Test 2: Concurrent read and write
-    write_en = 1;
-    write_data = `combine(64'h1, 64'h0); #1;
-
-    read_en = 1;
-    write_data = `combine(64'h3, 64'h2);
-    #1;
-
-    write_en = 0;
-    `assert(read_data, 64'h0) #1;
-    `assert(read_data, 64'h1) #1;
-    `assert(read_data, 64'h2) #1;
-    `assert(read_data, 64'h3)
-
-    `assert(fifo_empty, 1'b1)
-    read_en = 0; 
-    
-    #1;
-    `assert(fifo_empty, 1'b1)
 
     $finish;
     

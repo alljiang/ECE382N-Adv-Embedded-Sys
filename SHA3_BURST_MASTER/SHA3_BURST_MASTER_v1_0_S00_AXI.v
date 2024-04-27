@@ -24,8 +24,8 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     input wire read_active,
     input wire TXN_DONE,
 
-    output    wire                SHA3_DONE,        // Output from SHA3 Accelerator
-    output    wire                SHA3_START,       // Output from SHA3 Accelerator
+    output    wire                AES_DONE,        // Output from SHA3 Accelerator
+    output    wire                AES_START,       // Output from SHA3 Accelerator
 
     // User ports ends
     
@@ -118,17 +118,17 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     wire            axi_clk        =  S_AXI_ACLK;
     wire            axi_rst        =  S_AXI_ARESETN;
 
-    wire            keccak_clk     =  S_AXI_ACLK;
-    wire            keccak_rst     =  !S_AXI_ARESETN;   // Active high reset
+    wire            aes_clk        =  S_AXI_ACLK;
+    wire            s_axi_reset    =  !S_AXI_ARESETN;   // Active high reset
     
     wire [63:0]     keccak_in;
     wire  [2:0]     BYTE_NUM;
     wire            IN_READY;
     wire            IS_LAST;
     wire            BUFFER_FULL;
-    wire            keccak_reset;
+    wire            aes_reset;
     wire [31:0]     START_ADDRESS;
-    wire [15:0]     NUMBER_BYTES;
+    wire [15:0]     NUMBER_BLOCKS;
     
     wire [511:0]    keccak_hash_reg;                    // Keccak Results
     wire            keccak_complete;
@@ -704,11 +704,11 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
           // Address decoding for reading registers
           case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
             5'h00  : reg_data_out <= slv_reg0;                 // Control register
-            5'h01  : reg_data_out <= {28'h0,
-                                      SHA3_DONE,
-                                      SHA3_START,
-                                      IN_READY,
-                                      IS_LAST};                  
+            5'h01  : reg_data_out <= {26'h0,
+                                      block_size[1:0],
+                                      2'b0,
+                                      AES_DONE,
+                                      AES_START};                  
             5'h02  : reg_data_out <= slv_reg2;                
             5'h03  : reg_data_out <= slv_reg3;        
             5'h04  : reg_data_out <= slv_reg4;     
@@ -724,22 +724,22 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h0E  : reg_data_out <= slv_reg14;
             5'h0F  : reg_data_out <= 32'hdeadfeed;
 
-            5'h10  : reg_data_out <= keccak_hash_reg[511:480];
-            5'h11  : reg_data_out <= keccak_hash_reg[479:448];
-            5'h12  : reg_data_out <= keccak_hash_reg[447:416];
-            5'h13  : reg_data_out <= keccak_hash_reg[415:384];
-            5'h14  : reg_data_out <= keccak_hash_reg[383:352];
-            5'h15  : reg_data_out <= keccak_hash_reg[351:320];
-            5'h16  : reg_data_out <= keccak_hash_reg[319:288];
-            5'h17  : reg_data_out <= keccak_hash_reg[287:256];
-            5'h18  : reg_data_out <= keccak_hash_reg[255:224];
-            5'h19  : reg_data_out <= keccak_hash_reg[223:192];
-            5'h1A  : reg_data_out <= keccak_hash_reg[191:160];
-            5'h1B  : reg_data_out <= keccak_hash_reg[159:128];
-            5'h1C  : reg_data_out <= keccak_hash_reg[127:96];
-            5'h1D  : reg_data_out <= keccak_hash_reg[95:64];
-            5'h1E  : reg_data_out <= keccak_hash_reg[63:32];
-            5'h1F  : reg_data_out <= keccak_hash_reg[31:0];
+            5'h10  : reg_data_out <= debug[511:480];
+            5'h11  : reg_data_out <= debug[479:448];
+            5'h12  : reg_data_out <= debug[447:416];
+            5'h13  : reg_data_out <= debug[415:384];
+            5'h14  : reg_data_out <= debug[383:352];
+            5'h15  : reg_data_out <= debug[351:320];
+            5'h16  : reg_data_out <= debug[319:288];
+            5'h17  : reg_data_out <= debug[287:256];
+            5'h18  : reg_data_out <= debug[255:224];
+            5'h19  : reg_data_out <= debug[223:192];
+            5'h1A  : reg_data_out <= debug[191:160];
+            5'h1B  : reg_data_out <= debug[159:128];
+            5'h1C  : reg_data_out <= debug[127:96];
+            5'h1D  : reg_data_out <= debug[95:64];
+            5'h1E  : reg_data_out <= debug[63:32];
+            5'h1F  : reg_data_out <= debug[31:0];
             default : reg_data_out <= 0;
           endcase
     end
@@ -765,20 +765,19 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
 
     // Add user logic here
    
-   assign           keccak_reset    = slv_reg0[0];
-   assign           SHA3_START      = slv_reg0[1];
+   assign           aes_reset    = slv_reg0[0];
+   assign           AES_START      = slv_reg0[1];
+   assign           block_size   = slv_reg0[5:4];
    
-   assign           NUMBER_BYTES    = slv_reg2[15:0];
-   assign           START_ADDRESS   = slv_reg3[31:0];
+   assign           NUMBER_BLOCKS    = slv_reg2[15:0];
      
     dfsm dfsm(
-        .clk(keccak_clk),
-        .reset(keccak_reset | keccak_rst),
+        .clk(aes_clk),
+        .reset(aes_reset | s_axi_reset),
 
-        .start(SHA3_START),
+        .start(AES_START),
 
-        .keccak_in_ready(IN_READY),                // Output to Keccak
-        .keccak_is_last(IS_LAST),                  // Output to Keccak
+        .aes_block_size(block_size),
         
         // user signals
         .ocm_data_out(ocm_data_out),
@@ -788,9 +787,9 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .init_master_txn(init_master_txn),
         .read_done(TXN_DONE),
         .read_active(read_active),
-        .number_bytes(NUMBER_BYTES),
-        .keccak_hash_reg(keccak_hash_reg),
-        .out_ready(SHA3_DONE)
+        .NUMBER_BLOCKS(NUMBER_BLOCKS),
+        .debug(debug),
+        .out_ready(AES_DONE)
     );
 
     // User logic ends

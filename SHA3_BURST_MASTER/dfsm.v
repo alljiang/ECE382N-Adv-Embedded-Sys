@@ -1,14 +1,19 @@
 
 `timescale 1 ns / 1 ps
 
+`define AES_128 2'b00
+`define AES_192 2'b01
+`define AES_256 2'b10
+
 module dfsm (   
     input clk,
     input reset,
 
     input start,
 
-    output keccak_in_ready,
-    output keccak_is_last,
+    input wire [1:0] aes_key_size,
+    input wire [255:0] aes_key,
+    input wire [127:0] ctr_seed,
 
     input [127:0] ocm_data_out,
     input bus_data_valid,
@@ -18,29 +23,31 @@ module dfsm (
     input wire read_done,
     input read_active,
 
-    input wire [15:0] number_bytes,
+    input wire [15:0] number_blocks,
 
-    output wire [511:0] keccak_hash_reg,
+    output wire [511:0] debug,
     output wire out_ready
 );
 
-    // Keccak I/O
-    reg in_ready;
-    reg is_last;
-    reg [2:0] byte_num;
-    wire buffer_full;
-    assign keccak_in_ready = in_ready;
-    assign keccak_is_last = is_last;
-
     reg [3:0] state;
+    
+    wire [127:0] aes_128_out;
+    reg [127:0] aes_128_in;
+
+    aes_128 aes_128_top (
+        .clk(clk),
+        .state(aes_128_in[127:0]),
+        .key(aes_key[127:0]),
+        .out(aes_128_out[127:0])
+    );
 
     reg fifo_read_en;
-    wire [63:0] fifo_read_data;
+    wire [127:0] fifo_read_data;
     wire fifo_empty;
     wire fifo_half_full;
     wire fifo_full;
 
-    Bus_FIFO #(64) bus_fifo (
+    Bus_FIFO #(16) bus_fifo (
         .clk(clk),
         .rst(reset),
         .write_data(ocm_data_out),
@@ -52,23 +59,43 @@ module dfsm (
         .fifo_empty(fifo_empty)
     );
 
-   keccak KECCAK_TOP( 
+    reg aes_fifo_write_en;
+    wire aes_fifo_full;
+    wire aes_fifo_half_full;
+    wire aes_fifo_empty;
+    reg aes_fifo_read_en;
+    wire [127:0] aes_fifo_read_data;
+
+    Bus_FIFO #(16) aes_fifo (
         .clk(clk),
-        .reset(reset),
-        .in({fifo_read_data[31:0], fifo_read_data[63:32]}),
-        .in_ready(in_ready),
-        .is_last(is_last),
-        .byte_num(byte_num),
-        .buffer_full(buffer_full),
-        .out(keccak_hash_reg),
-        .out_ready(out_ready)
+        .rst(reset),
+        .write_data(fifo_read_data),
+        .write_en(aes_fifo_write_en),
+        .read_en(aes_fifo_read_en),
+        .read_data(aes_fifo_read_data),
+        .fifo_full(aes_fifo_full),
+        .fifo_half_full(aes_fifo_half_full),
+        .fifo_empty(aes_fifo_empty)
+    );
+
+    reg output_fifo_write_en;
+
+    Bus_FIFO #(16) output_fifo (
+        .clk(clk),
+        .rst(reset),
+        .write_data(aes_fifo_read_data[127:0] ^ aes_128_out[127:0]),
+        .write_en(output_fifo_write_en),
+        .read_en(),
+        .read_data(),
+        .fifo_full(output_fifo_full),
+        .fifo_half_full(output_fifo_half_full),
+        .fifo_empty(output_fifo_empty)
     );
 
     assign dfsm_read_ready = ~fifo_half_full;
 
     reg [1:0] read_state;
-    reg [15:0] bytes_to_read;
-    reg [15:0] test_count;
+    reg [15:0] blocks_to_read;
 
     // this state machine will read words from the bus_fifo
     always @(posedge clk) begin
@@ -76,18 +103,14 @@ module dfsm (
             read_addr_index <= 0;
             read_state <= 2'b11;
             init_master_txn <= 0;
-            bytes_to_read <= 0;
+            blocks_to_read <= 0;
         end
         else begin
             case (read_state)
                 2'b00: begin
-                    if (bytes_to_read > 0) begin
+                    if (blocks_to_read > 0) begin
                         init_master_txn <= 1;
-
-                        if (bytes_to_read <= 16)
-                            bytes_to_read <= 0;
-                        else
-                            bytes_to_read <= bytes_to_read - 16;
+                        blocks_to_read <= blocks_to_read - 1;
 
                         read_state <= 2'b01;
                     end
@@ -112,7 +135,7 @@ module dfsm (
                 2'b11: begin
                     if (start) begin
                         read_state <= 2'b00;
-                        bytes_to_read <= number_bytes;
+                        blocks_to_read <= number_blocks;
                     end
                     else
                         read_state <= 2'b11;
@@ -123,17 +146,54 @@ module dfsm (
         end
     end
 
-    reg [15:0] bytes_to_process;
+    reg [15:0] blocks_to_process;
+    reg [28:0] delay_pipe;
+
+    // series of flip-flops for counting delays
+    genvar i;
+    for (i = 1; i < 29; i = i + 1) begin
+        always @(posedge clk) begin
+            if (reset) begin
+                delay_pipe[i] <= 0;
+            end
+            else begin
+                delay_pipe[i] <= delay_pipe[i-1];
+            end
+        end
+    end
+
+    // aes output handling
+    always @(posedge clk) begin
+        if (reset) begin
+            aes_fifo_read_en <= 0;
+        end
+        else begin
+            if (aes_key_size == `AES_128) begin
+                if (delay_pipe[19] == 1) begin
+                    aes_fifo_read_en <= 1;
+                end
+                else if (delay_pipe[20] == 1) begin
+                    aes_fifo_read_en <= 0;
+                    output_fifo_write_en <= 1;
+                end
+                else if (delay_pipe[21] == 1) begin
+                    output_fifo_write_en <= 0;
+                end
+                else begin
+                    aes_fifo_read_en <= 0;              
+                end
+            end
+        end
+    end
 
     always @(posedge clk) begin
         if (reset) begin
             state <= 4'd0;
             fifo_read_en <= 0;
-            bytes_to_process <= 0;
-            in_ready <= 0;
-            is_last <= 0;
-            byte_num <= 0;
-            test_count <= 0;
+            blocks_to_process <= 0;
+            delay_pipe[0] <= 0;
+            aes_128_in <= 0;
+            aes_fifo_write_en <= 0;
         end
         else begin
             case (state)
@@ -141,55 +201,40 @@ module dfsm (
                     // wait for start signal
                     if (start) begin
                         state <= 4'd1;
-                        bytes_to_process <= number_bytes;
+                        aes_128_in <= 0;
+                        blocks_to_process <= number_blocks;
                     end
                 end
                 4'd1: begin
-                    if (~fifo_empty && bytes_to_process > 0 && ~buffer_full) begin
+                    if (~fifo_empty && ~aes_fifo_full && blocks_to_process > 0) begin
                         fifo_read_en <= 1;
-                        test_count <= test_count + 1;
+                        blocks_to_process <= blocks_to_process - 1;
 
                         state <= 4'd2;
                     end
-                    else if (bytes_to_process == 0 && ~buffer_full) begin
-                        state <= 4'd2;
-                    end
-                end
-                4'd2: begin
-                    fifo_read_en <= 0;
-                    state <= 4'd3;
-                    in_ready <= 1;
-
-                    if (bytes_to_process < 8) begin
-                        is_last <= 1;
-                    end
-
-                    if (bytes_to_process >= 8) begin
-                        bytes_to_process <= bytes_to_process - 8;
-                        byte_num <= 0;
-                    end
-                    else begin
-                        bytes_to_process <= 0;
-                        byte_num <= bytes_to_process;
-                    end
-                end
-                4'd3: begin
-                    in_ready <= 0;
-                    
-                    if (is_last) begin
-                        state <= 4'd4;
-                        is_last <= 0;
+                    else if (blocks_to_process == 0) begin
+                        state <= 4'd5;
                     end
                     else begin
                         state <= 4'd1;
                     end
                 end
-                4'd4: begin
+                4'd2: begin
+                    // start delay pipe to wait for aes_128 to finish
+                    aes_128_in <= ctr_seed;
+                    delay_pipe[0] <= 1;
 
-                    // wait for out_ready
-                    if (out_ready) begin
-                        state <= 4'd5;
-                    end
+                    // move from bus fifo to aes fifo
+                    fifo_read_en <= 0;
+                    aes_fifo_write_en <= 1;
+                    state <= 4'd3;
+                end
+                4'd3: begin
+                    aes_128_in <= 0;
+                    delay_pipe[0] <= 0;
+
+                    aes_fifo_write_en <= 0;
+                    state <= 4'd1;
                 end
                 4'd5: begin
                     // done
