@@ -780,39 +780,22 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
 
     assign           NUMBER_BLOCKS    = slv_reg2[15:0];
 
-    assign           aes_key_255_224 = slv_reg3;
-    assign           aes_key_223_192 = slv_reg4;
-    assign           aes_key_191_160 = slv_reg5;
-    assign           aes_key_159_128 = slv_reg6;
-    assign           aes_key_127_96  = slv_reg7;
-    assign           aes_key_95_64   = slv_reg8;
-    assign           aes_key_63_32   = slv_reg9;
-    assign           aes_key_31_0    = slv_reg10;
-
-    assign           ctr_iv_127_96   = slv_reg11;
-    assign           ctr_iv_95_64    = slv_reg12;
-    assign           ctr_iv_63_32    = slv_reg13;
-    assign           ctr_iv_31_0     = slv_reg14;
-
     wire aes_key[255:0];
-    assign aes_key = {
-        {aes_key_255_224},
-        {aes_key_223_192},
-        {aes_key_191_160},
-        {aes_key_159_128},
-        {aes_key_127_96},
-        {aes_key_95_64},
-        {aes_key_63_32},
-        {aes_key_31_0}
-    };
+    assign aes_key[255:224] = slv_reg3;
+    assign aes_key[223:192] = slv_reg4;
+    assign aes_key[191:160] = slv_reg5;
+    assign aes_key[159:128] = slv_reg6;
+    assign aes_key[127:96]  = slv_reg7;
+    assign aes_key[95:64]   = slv_reg8;
+    assign aes_key[63:32]   = slv_reg9;
+    assign aes_key[31:0]    = slv_reg10;
 
-    wire ctr_iv[127:0] = {
-        {slv_reg11},
-        {slv_reg12},
-        {slv_reg13},
-        {slv_reg14}
-    };
-     
+    wire ctr_iv[127:0];
+    assign ctr_iv[127:96] = slv_reg11;
+    assign ctr_iv[95:64]  = slv_reg12;
+    assign ctr_iv[63:32]  = slv_reg13;
+    assign ctr_iv[31:0]   = slv_reg14;
+
     dfsm dfsm(
         .clk(aes_clk),
         .reset(aes_reset | s_axi_reset),
