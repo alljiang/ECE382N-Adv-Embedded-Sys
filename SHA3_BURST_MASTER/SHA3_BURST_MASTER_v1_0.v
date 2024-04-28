@@ -115,7 +115,8 @@
     wire [31:0] read_addr_index;
     wire [127:0] ocm_data_out;
     wire [63:0] debug_master;
-
+    wire [127:0] output_fifo_read_data; 
+    
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
