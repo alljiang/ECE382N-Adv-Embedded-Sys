@@ -723,7 +723,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h04  : reg_data_out <= slv_reg4;     
             5'h05  : reg_data_out <= slv_reg5;         
             5'h06  : reg_data_out <= slv_reg6;   
-            5'h07  : reg_data_out <= 32'hdeafbabe;
+            5'h07  : reg_data_out <= slv_reg7;
             5'h08  : reg_data_out <= slv_reg8;
             5'h09  : reg_data_out <= slv_reg9;
             5'h0A  : reg_data_out <= slv_reg10;
@@ -731,7 +731,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h0C  : reg_data_out <= slv_reg12;
             5'h0D  : reg_data_out <= slv_reg13;
             5'h0E  : reg_data_out <= slv_reg14;
-            5'h0F  : reg_data_out <= 32'hdeadfeed;
+            5'h0F  : reg_data_out <= 32'hdeafbabe;
 
             5'h10  : reg_data_out <= slv_reg16;
             5'h11  : reg_data_out <= slv_reg17;
