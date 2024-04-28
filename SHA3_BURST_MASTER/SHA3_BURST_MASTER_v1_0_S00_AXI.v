@@ -29,6 +29,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     input wire output_fifo_read_en,
     output wire [127:0] output_fifo_read_data,
     output wire output_fifo_empty,
+    input wire write_finished,
 
     output    wire                AES_DONE,       
     output    wire                AES_START,      
@@ -820,6 +821,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .output_fifo_read_en(output_fifo_read_en),
         .output_fifo_read_data(output_fifo_read_data),
         .output_fifo_empty(output_fifo_empty),
+        .write_finished(write_finished),
         
         .number_blocks(number_blocks),
 

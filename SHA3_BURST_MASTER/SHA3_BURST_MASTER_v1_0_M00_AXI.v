@@ -42,6 +42,7 @@
         output reg output_fifo_read_en,
         input wire [127:0] output_fifo_read_data,
         input wire output_fifo_empty,
+        output wire write_finished,
 
         output wire [63:0] debug_master,
 
@@ -246,6 +247,8 @@
 	reg  	init_txn_ff2;
 	reg  	init_txn_edge;
 	wire  	init_txn_pulse;
+
+    assign write_finished = writes_done;
 
 
 	// I/O Connections assignments

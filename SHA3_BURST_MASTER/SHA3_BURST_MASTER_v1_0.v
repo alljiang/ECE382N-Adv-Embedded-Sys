@@ -131,6 +131,7 @@
         .output_fifo_read_en(output_fifo_read_en),
         .output_fifo_read_data(output_fifo_read_data),
         .output_fifo_empty(output_fifo_empty),
+        .write_finished(write_finished),
         .debug_master(debug_master),
 
 	    .AES_DONE(AES_DONE),
@@ -186,6 +187,7 @@
         .output_fifo_read_en(output_fifo_read_en),
         .output_fifo_read_data(output_fifo_read_data),
         .output_fifo_empty(output_fifo_empty),
+        .write_finished(write_finished),
         .debug_master(debug_master),
         
 		.ERROR(m00_axi_error),

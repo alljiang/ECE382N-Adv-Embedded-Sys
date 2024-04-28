@@ -26,6 +26,7 @@ module dfsm (
     input wire output_fifo_read_en,
     output wire [127:0] output_fifo_read_data,
     output wire output_fifo_empty,
+    input wire write_finished,
 
     input wire [15:0] number_blocks,
 
@@ -255,5 +256,7 @@ module dfsm (
             endcase
         end
     end
+
+    assign out_ready = write_finished && output_fifo_empty && aes_fifo_empty && fifo_empty && blocks_to_read == 0 && blocks_to_process == 0;
 
  endmodule
