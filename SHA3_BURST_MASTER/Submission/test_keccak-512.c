@@ -17,7 +17,7 @@
 #include "clock.h"
 
 uint32_t *ocm_regs;
-uint32_t *burst_regs;
+uint32_t *aes_regs;
 uint32_t *timer_regs;
 uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
@@ -90,7 +90,7 @@ map_regs() {
 	                  dh,
 	                  ADDRESS_CAPTURE_TIMER_SLAVE);
 
-	burst_regs = mmap(NULL,
+	aes_regs = mmap(NULL,
 	                  128,
 	                  PROT_READ | PROT_WRITE,
 	                  MAP_SHARED,
@@ -287,22 +287,22 @@ main(int argc, char *argv[]) {
 	}
 
 	// set NUMBER_BYTES
-	burst_regs[2] = test_string_length;
+	aes_regs[2] = test_string_length;
 
 	// reset
-	burst_regs[0] = 0b1;
-	burst_regs[0] = 0b0;
+	aes_regs[0] = 0b1;
+	aes_regs[0] = 0b0;
 
 	// start
-	burst_regs[0] = 0b10;
+	aes_regs[0] = 0b10;
 
 	// wait until keccak done
-	while (!(burst_regs[1] & 0b1000)) {}
+	while (!(aes_regs[1] & 0b1000)) {}
 
-	for (int i = 16; i < 32; i++) { printf("0x%08X\n", burst_regs[i]); }
+	for (int i = 16; i < 32; i++) { printf("0x%08X\n", aes_regs[i]); }
 	printf("\nTimer value: %d nanoseconds\n", timer_value);
 
-	burst_regs[0] = 0b00;
+	aes_regs[0] = 0b00;
 
 	unmap_regs();
 }

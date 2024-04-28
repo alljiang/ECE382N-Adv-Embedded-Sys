@@ -1,0 +1,1 @@
+cmd_/home/ee382n/ECE382N-Adv-Embedded-Sys/SHA3_BURST_MASTER/Firmware/Module.symvers := sed 's/\.ko$$/\.o/' /home/ee382n/ECE382N-Adv-Embedded-Sys/SHA3_BURST_MASTER/Firmware/modules.order | scripts/mod/modpost    -o /home/ee382n/ECE382N-Adv-Embedded-Sys/SHA3_BURST_MASTER/Firmware/Module.symvers -e -i Module.symvers   -T -

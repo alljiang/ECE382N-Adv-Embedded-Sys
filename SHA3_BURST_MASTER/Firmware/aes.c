@@ -23,15 +23,19 @@ uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
 
 #define ADDRESS_OCM 0xFFFC0000
-#define ADDRESS_BURST_MASTER_SLAVE 0xB0000000
+#define ADDRESS_AES_SLAVE 0xB0000000
 #define ADDRESS_CAPTURE_TIMER_SLAVE 0xB0002000
+
+#define AES_KEY_SIZE_128 0b00
+#define AES_KEY_SIZE_192 0b01
+#define AES_KEY_SIZE_256 0b10
 
 uint32_t timer_value;
 
 void
 sighandler(int signo) {
 	if (signo == SIGIO) {
-		timer_value = timer_regs[2] * 1000 / 150;  // convert to ns
+		timer_value = timer_regs[2] * 1000 / 300;  // convert to ns
 	}
 
 	return; /* Return to main loop */
@@ -90,12 +94,8 @@ map_regs() {
 	                  dh,
 	                  ADDRESS_CAPTURE_TIMER_SLAVE);
 
-	aes_regs = mmap(NULL,
-	                  128,
-	                  PROT_READ | PROT_WRITE,
-	                  MAP_SHARED,
-	                  dh,
-	                  ADDRESS_BURST_MASTER_SLAVE);
+	aes_regs = mmap(
+	    NULL, 128, PROT_READ | PROT_WRITE, MAP_SHARED, dh, ADDRESS_AES_SLAVE);
 	ps_clk_reg =
 	    mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, dh, 0xFD1A0000);
 	pl_clk_reg =
@@ -229,72 +229,77 @@ main(int argc, char *argv[]) {
 		return 1;
 	}
 
-    if (argc != 3) {
-        printf("Usage: -s \"string\" or -f \"file.txt\"\n");
-        return 1;    
-    }
+    // if (argc != 3) {
+    //     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
+    //     return 1;    
+    // }
 
-    if (strcmp(argv[1], "-s") != 0 && strcmp(argv[1], "-f") != 0) {
-        printf("Usage: -s \"string\" or -f \"file.txt\"\n");
-        return 1;
-    }
+    // if (strcmp(argv[1], "-s") != 0 && strcmp(argv[1], "-f") != 0) {
+    //     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
+    //     return 1;
+    // }
 
-    char *test_string;
-    uint16_t test_string_length;
-    if (strcmp(argv[1], "-s") == 0) {
-        printf("String: \'%s\'\n", argv[2]);
-		test_string_length = strlen(argv[2]);
-        test_string = argv[2];
-	} else {
-        printf("File: %s\n", argv[2]);
-        FILE *file = fopen(argv[2], "r");
-        if (file == NULL) {
-            printf("Error opening file\n");
-            return 1;
-        }
+    // char *test_string;
+    // uint16_t test_string_length;
+    // if (strcmp(argv[1], "-s") == 0) {
+    //     printf("String: \'%s\'\n", argv[2]);
+	// 	test_string_length = strlen(argv[2]);
+    //     test_string = argv[2];
+	// } else {
+    //     printf("File: %s\n", argv[2]);
+    //     FILE *file = fopen(argv[2], "r");
+    //     if (file == NULL) {
+    //         printf("Error opening file\n");
+    //         return 1;
+    //     }
 
-        fseek(file, 0, SEEK_END);
-        test_string_length = ftell(file);
+    //     fseek(file, 0, SEEK_END);
+    //     test_string_length = ftell(file);
 
-        test_string = malloc(test_string_length);
-        fseek(file, 0, SEEK_SET);
-        fread(test_string, 1, test_string_length, file);
-        fclose(file);
-    }
+    //     test_string = malloc(test_string_length);
+    //     fseek(file, 0, SEEK_SET);
+    //     fread(test_string, 1, test_string_length, file);
+    //     fclose(file);
+    // }
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_150_MHZ);
 	setup_capture_timer_interrupt();
 
-	int ocm_index = 0;
-	for (int i = 0; i < test_string_length; i++) {
+	for (int i = 0; i < 128/8; i++) {
         ocm_regs[i] = 0;
     }
 
-	for (int i = 0; i < test_string_length; i++) {
-		if (test_string_length - i > 4) {
-			ocm_regs[ocm_index] =
-			    (test_string[i] << 24) | (test_string[i + 1] << 16) |
-			    (test_string[i + 2] << 8) | test_string[i + 3];
-			ocm_index++;
-			i += 3;
-		} else {
-			for (int j = 0; j < test_string_length - i; j++) {
-				ocm_regs[ocm_index] =
-				    ocm_regs[ocm_index] | (test_string[i + j] << (24 - 8 * j));
-			}
-			break;
-		}
-	}
+    // in hex
+    char aes_key[] = "00112233445566778899AABBCCDDEEFF";
 
-	// set NUMBER_BYTES
-	aes_regs[2] = test_string_length;
+    // regs 3-10 are for 256 bit key, 7-10 are for 128
+    aes_regs[7] = atoi(aes_key[0]) << 24 | atoi(aes_key[1]) << 16 | atoi(aes_key[2]) << 8 | atoi(aes_key[3]);
+    aes_regs[8] = atoi(aes_key[4]) << 24 | atoi(aes_key[5]) << 16 | atoi(aes_key[6]) << 8 | atoi(aes_key[7]);
+    aes_regs[9] = atoi(aes_key[8]) << 24 | atoi(aes_key[9]) << 16 | atoi(aes_key[10]) << 8 | atoi(aes_key[11]);
+    aes_regs[10] = atoi(aes_key[12]) << 24 | atoi(aes_key[13]) << 16 | atoi(aes_key[14]) << 8 | atoi(aes_key[15]);
+
+    printf("%h\n", aes_regs[7]);
+    printf("%h\n", aes_regs[8]);
+    printf("%h\n", aes_regs[9]);
+    printf("%h\n", aes_regs[10]);
+
+    // set IV
+    uint64_t iv = 0x0;
+    aes_regs[11] = iv >> 32;
+    aes_regs[12] = iv & 0xFFFFFFFF;
+
+	// set number_blocks
+	aes_regs[2] = 1;
 
 	// reset
 	aes_regs[0] = 0b1;
 	aes_regs[0] = 0b0;
 
+    // set key size
+    aes_regs[0] = (AES_KEY_SIZE_128 << 4);
+
 	// start
-	aes_regs[0] = 0b10;
+	aes_regs[0] |= 0b10;
 
 	// wait until keccak done
 	while (!(aes_regs[1] & 0b1000)) {}
