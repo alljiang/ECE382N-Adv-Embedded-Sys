@@ -704,6 +704,8 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     // Implement memory mapped register select and read logic generation
     // Slave register read enable is asserted when valid address is available
     // and the slave is ready to accept the read address.
+    wire [1:0] aes_key_size;
+    wire [191:0] debug;
     assign slv_reg_rden = axi_arready & S_AXI_ARVALID & ~axi_rvalid;
     always @(*)
     begin
@@ -778,9 +780,9 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     assign           AES_START    = slv_reg0[1];
     assign           aes_key_size = slv_reg0[5:4];
 
-    assign           NUMBER_BLOCKS    = slv_reg2[15:0];
+    wire [15:0] number_blocks = slv_reg2[15:0];
 
-    wire aes_key[255:0];
+    wire [255:0] aes_key;
     assign aes_key[255:224] = slv_reg3;
     assign aes_key[223:192] = slv_reg4;
     assign aes_key[191:160] = slv_reg5;
@@ -790,7 +792,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     assign aes_key[63:32]   = slv_reg9;
     assign aes_key[31:0]    = slv_reg10;
 
-    wire ctr_iv[127:0];
+    wire [127:0] ctr_iv;
     assign ctr_iv[127:96] = slv_reg11;
     assign ctr_iv[95:64]  = slv_reg12;
     assign ctr_iv[63:32]  = slv_reg13;
@@ -819,7 +821,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .output_fifo_read_data(output_fifo_read_data),
         .output_fifo_empty(output_fifo_empty),
         
-        .NUMBER_BLOCKS(NUMBER_BLOCKS),
+        .number_blocks(number_blocks),
 
         .debug(debug),
         .out_ready(AES_DONE)

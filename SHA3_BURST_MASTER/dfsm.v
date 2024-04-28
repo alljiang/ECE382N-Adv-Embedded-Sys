@@ -29,7 +29,7 @@ module dfsm (
 
     input wire [15:0] number_blocks,
 
-    output wire [192:0] debug,
+    output wire [191:0] debug,
     output wire out_ready
 );
 
@@ -193,6 +193,8 @@ module dfsm (
         end
     end
 
+    reg [127:0] counter;
+
     always @(posedge clk) begin
         if (reset) begin
             state <= 4'd0;
@@ -201,6 +203,7 @@ module dfsm (
             delay_pipe[0] <= 0;
             aes_128_in <= 0;
             aes_fifo_write_en <= 0;
+            counter <= 0;
         end
         else begin
             case (state)
@@ -228,7 +231,8 @@ module dfsm (
                 end
                 4'd2: begin
                     // start delay pipe to wait for aes_128 to finish
-                    aes_128_in <= ctr_iv;
+                    aes_128_in <= ctr_iv + counter;
+                    counter <= counter + 1;
                     delay_pipe[0] <= 1;
 
                     // move from bus fifo to aes fifo

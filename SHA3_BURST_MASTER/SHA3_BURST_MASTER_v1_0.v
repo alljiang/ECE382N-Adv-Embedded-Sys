@@ -27,8 +27,8 @@
 	)
 	(
 		// Users to add ports here
-		output    wire                                SHA3_DONE,        // Output from SHA3 Accelerator
-		output    wire                                SHA3_START,       // Output from SHA3 Accelerator
+		output    wire                                AES_DONE,        // Output from SHA3 Accelerator
+		output    wire                                AES_START,       // Output from SHA3 Accelerator
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -112,6 +112,10 @@
 // Instantiation of Axi Bus Interface S00_AXI
 // ------------------------------------------------------------------------------------
 
+    wire [31:0] read_addr_index;
+    wire [127:0] ocm_data_out;
+    wire [63:0] debug_master;
+
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
@@ -119,7 +123,7 @@
         .ocm_data_out(ocm_data_out),
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
-        .read_addr_index(read_addr_index),
+        .read_addr_index(read_addr_index[31:0]),
         .init_master_txn(init_master_txn),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
@@ -129,8 +133,8 @@
         .output_fifo_empty(output_fifo_empty),
         .debug_master(debug_master),
 
-	    .SHA3_DONE(SHA3_DONE),
-	    .SHA3_START(SHA3_START),
+	    .AES_DONE(AES_DONE),
+	    .AES_START(AES_START),
 
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
@@ -175,7 +179,7 @@
         .ocm_data_out(ocm_data_out),
         .bus_data_valid(bus_data_valid),
         .dfsm_read_ready(dfsm_read_ready),
-        .read_addr_index(read_addr_index),
+        .read_addr_index(read_addr_index[31:0]),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
 
