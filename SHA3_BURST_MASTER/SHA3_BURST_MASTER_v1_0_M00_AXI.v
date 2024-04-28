@@ -39,7 +39,7 @@
         input wire [31:0] read_addr_index,
         output wire read_active,
 
-        output wire output_fifo_read_en,
+        output reg output_fifo_read_en,
         input wire [127:0] output_fifo_read_data,
         input wire output_fifo_empty,
 
@@ -741,8 +741,7 @@
 	      begin                                                                                                 
 	        // reset condition                                                                                  
 	        // All the signals are assigned default values under reset condition                                
-	        mst_exec_state      <= IDLE;                                                                
-	        start_single_burst_write <= 1'b0;
+	        mst_exec_state      <= IDLE;        
 	        start_single_burst_read  <= 1'b0;
 	        ERROR <= 1'b0;   
 	      end                                                                                                   
@@ -800,6 +799,7 @@
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
             output_fifo_read_en <= 1'b0;
             write_count <= 32'b0;
+            start_single_burst_write <= 1'b0;
         end 
         else if (~output_fifo_empty && ~axi_awvalid && ~start_single_burst_write && ~burst_write_active) begin     
             output_fifo_read_en <= 1'b1;

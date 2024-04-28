@@ -29,9 +29,11 @@ module dfsm (
 
     input wire [15:0] number_blocks,
 
-    output wire [511:0] debug,
+    output wire [192:0] debug,
     output wire out_ready
 );
+
+    assign debug = 0;
 
     reg [3:0] state;
     

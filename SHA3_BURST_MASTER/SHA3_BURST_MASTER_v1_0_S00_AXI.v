@@ -711,7 +711,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
           case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
             5'h00  : reg_data_out <= slv_reg0;                 // Control register
             5'h01  : reg_data_out <= {26'h0,
-                                      block_size[1:0],
+                                      aes_key_size[1:0],
                                       2'b0,
                                       AES_DONE,
                                       AES_START};                  
@@ -794,22 +794,23 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     assign           ctr_iv_63_32    = slv_reg13;
     assign           ctr_iv_31_0     = slv_reg14;
 
-    wire aes_key[255:0] = {
-        aes_key_255_224,
-        aes_key_223_192,
-        aes_key_191_160,
-        aes_key_159_128,
-        aes_key_127_96,
-        aes_key_95_64,
-        aes_key_63_32,
-        aes_key_31_0
+    wire aes_key[255:0];
+    assign aes_key = {
+        {aes_key_255_224},
+        {aes_key_223_192},
+        {aes_key_191_160},
+        {aes_key_159_128},
+        {aes_key_127_96},
+        {aes_key_95_64},
+        {aes_key_63_32},
+        {aes_key_31_0}
     };
 
     wire ctr_iv[127:0] = {
-        ctr_iv_127_96,
-        ctr_iv_95_64,
-        ctr_iv_63_32,
-        ctr_iv_31_0
+        {slv_reg11},
+        {slv_reg12},
+        {slv_reg13},
+        {slv_reg14}
     };
      
     dfsm dfsm(
