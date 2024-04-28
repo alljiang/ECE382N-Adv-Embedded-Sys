@@ -12,7 +12,11 @@
 # cp TIMER_CAPTURE/TIMER_CAPTURE_AXI_v1_0_S00_AXI_inst.v /misc/scratch/ajiang1/ip_repo/TIMER_CAPTURE_AXI_1_0/hdl/TIMER_CAPTURE_AXI_v1_0_S00_AXI.v
 
 cp SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/SHA3_BURST_MASTER_v1_0.v
-cp SHA3_BURST_MASTER/keccak.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/keccak.v
+cp AES/tiny_aes/aes_128.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/aes_128.v
+cp AES/tiny_aes/aes_192.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/aes_192.v
+cp AES/tiny_aes/aes_256.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/aes_256.v
+cp AES/tiny_aes/round.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/round.v
+cp AES/tiny_aes/table.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/src/table.v
 cp SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0_M00_AXI.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/hdl/SHA3_BURST_MASTER_v1_0_M00_AXI.v 
 cp SHA3_BURST_MASTER/SHA3_BURST_MASTER_v1_0_S00_AXI.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/hdl/SHA3_BURST_MASTER_v1_0_S00_AXI.v 
 cp SHA3_BURST_MASTER/dfsm.v /misc/scratch/ajiang1/Lab3/ip_repo/SHA3_BURST_MASTER_1_0/hdl/dfsm.v 
