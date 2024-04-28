@@ -112,11 +112,6 @@
 // Instantiation of Axi Bus Interface S00_AXI
 // ------------------------------------------------------------------------------------
 
-    wire [127:0] ocm_data_out;      // master -> slave
-    wire bus_data_valid;            // master -> slave
-    wire dfsm_read_ready;           // slave -> master
-    wire [31:0] read_addr_index;   // slave -> master
-
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
@@ -128,6 +123,11 @@
         .init_master_txn(init_master_txn),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
+
+        .output_fifo_read_en(output_fifo_read_en),
+        .output_fifo_read_data(output_fifo_read_data),
+        .output_fifo_empty(output_fifo_empty),
+        .debug_master(debug_master),
 
 	    .SHA3_DONE(SHA3_DONE),
 	    .SHA3_START(SHA3_START),
@@ -178,6 +178,11 @@
         .read_addr_index(read_addr_index),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
+
+        .output_fifo_read_en(output_fifo_read_en),
+        .output_fifo_read_data(output_fifo_read_data),
+        .output_fifo_empty(output_fifo_empty),
+        .debug_master(debug_master),
         
 		.ERROR(m00_axi_error),
 		.M_AXI_ACLK(m00_axi_aclk),

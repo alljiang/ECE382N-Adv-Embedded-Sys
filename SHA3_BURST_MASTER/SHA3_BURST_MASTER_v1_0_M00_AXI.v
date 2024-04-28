@@ -39,6 +39,12 @@
         input wire [31:0] read_addr_index,
         output wire read_active,
 
+        output wire output_fifo_read_en,
+        input wire [127:0] output_fifo_read_data,
+        input wire output_fifo_empty,
+
+        output wire [63:0] debug_master,
+
 		// User ports ends
 		
 		// Do not modify the ports beyond this line
@@ -262,7 +268,8 @@
 	assign M_AXI_AWUSER	= 'b1;
 	assign M_AXI_AWVALID	= axi_awvalid;
 	//Write Data(W)
-	assign M_AXI_WDATA	= axi_wdata;
+	// assign M_AXI_WDATA	= axi_wdata;
+	assign M_AXI_WDATA	= output_fifo_read_data;
 	//All bursts are complete and aligned in this example
 	assign M_AXI_WSTRB	= {(C_M_AXI_DATA_WIDTH/8){1'b1}};
 	assign M_AXI_WLAST	= axi_wlast;
@@ -460,19 +467,19 @@
 	  end                                                                               
 	                                                                                    
 	                                                                                    
-	/* Write Data Generator                                                             
-	 Data pattern is only a simple incrementing count from 0 for each burst  */         
-	  always @(posedge M_AXI_ACLK)                                                      
-	  begin                                                                             
-	    if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)                                                         
-	      axi_wdata <= 'b1;                                                             
-	    //else if (wnext && axi_wlast)                                                  
-	    //  axi_wdata <= 'b0;                                                           
-	    else if (wnext)                                                                 
-	      axi_wdata <= axi_wdata + 1;                                                   
-	    else                                                                            
-	      axi_wdata <= axi_wdata;                                                       
-	    end                                                                             
+	// /* Write Data Generator                                                             
+	//  Data pattern is only a simple incrementing count from 0 for each burst  */         
+	//   always @(posedge M_AXI_ACLK)                                                      
+	//   begin                                                                             
+	//     if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1)                                                         
+	//       axi_wdata <= 'b1;                                                             
+	//     //else if (wnext && axi_wlast)                                                  
+	//     //  axi_wdata <= 'b0;                                                           
+	//     else if (wnext)                                                                 
+	//       axi_wdata <= axi_wdata + 1;                                                   
+	//     else                                                                            
+	//       axi_wdata <= axi_wdata;                                                       
+	//     end                                                                             
 
 
 	//----------------------------
@@ -782,7 +789,28 @@
 	              end                                                                                           
 	        endcase                                                                                             
 	      end                                                                                                   
-	  end //MASTER_EXECUTION_PROC                                                                               
+	  end //MASTER_EXECUTION_PROC      
+
+    reg [31:0] write_count;
+    assign debug_master[31:0] = write_count;
+    assign debug_master[63:32] = M_AXI_WDATA[127:96];
+
+    // fifo writeback logic
+    always @(posedge M_AXI_ACLK) begin
+        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
+            output_fifo_read_en <= 1'b0;
+            write_count <= 32'b0;
+        end 
+        else if (~output_fifo_empty && ~axi_awvalid && ~start_single_burst_write && ~burst_write_active) begin     
+            output_fifo_read_en <= 1'b1;
+            start_single_burst_write <= 1'b1;                
+            write_count <= write_count + 1;
+        end
+        else begin
+            output_fifo_read_en <= 1'b0;
+            start_single_burst_write <= 1'b0;
+        end
+    end                                                                         
 	                                                                                                            
 	                                                                                                            
 	  // burst_write_active signal is asserted when there is a burst write transaction                          

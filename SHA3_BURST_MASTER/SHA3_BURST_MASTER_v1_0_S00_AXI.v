@@ -24,8 +24,14 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     input wire read_active,
     input wire TXN_DONE,
 
-    output    wire                AES_DONE,        // Output from SHA3 Accelerator
-    output    wire                AES_START,       // Output from SHA3 Accelerator
+    input wire [63:0] debug_master,
+
+    input wire output_fifo_read_en,
+    output wire [127:0] output_fifo_read_data,
+    output wire output_fifo_empty,
+
+    output    wire                AES_DONE,       
+    output    wire                AES_START,      
 
     // User ports ends
     
@@ -724,16 +730,20 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
             5'h0E  : reg_data_out <= slv_reg14;
             5'h0F  : reg_data_out <= 32'hdeadfeed;
 
-            5'h10  : reg_data_out <= debug[511:480];
-            5'h11  : reg_data_out <= debug[479:448];
-            5'h12  : reg_data_out <= debug[447:416];
-            5'h13  : reg_data_out <= debug[415:384];
-            5'h14  : reg_data_out <= debug[383:352];
-            5'h15  : reg_data_out <= debug[351:320];
-            5'h16  : reg_data_out <= debug[319:288];
-            5'h17  : reg_data_out <= debug[287:256];
-            5'h18  : reg_data_out <= debug[255:224];
-            5'h19  : reg_data_out <= debug[223:192];
+            5'h10  : reg_data_out <= slv_reg16;
+            5'h11  : reg_data_out <= slv_reg17;
+            5'h12  : reg_data_out <= slv_reg18;
+            5'h13  : reg_data_out <= slv_reg19;
+            5'h14  : reg_data_out <= slv_reg20;
+            5'h15  : reg_data_out <= slv_reg21;
+            5'h16  : reg_data_out <= slv_reg22;
+            5'h17  : reg_data_out <= slv_reg23;
+            // 5'h18  : reg_data_out <= debug[255:224];
+            // 5'h19  : reg_data_out <= debug[223:192];
+
+            5'h18  : reg_data_out <= debug_master[63:32];
+            5'h19  : reg_data_out <= debug_master[31:0];
+
             5'h1A  : reg_data_out <= debug[191:160];
             5'h1B  : reg_data_out <= debug[159:128];
             5'h1C  : reg_data_out <= debug[127:96];
@@ -764,12 +774,43 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     end    
 
     // Add user logic here
-   
-   assign           aes_reset    = slv_reg0[0];
-   assign           AES_START      = slv_reg0[1];
-   assign           block_size   = slv_reg0[5:4];
-   
-   assign           NUMBER_BLOCKS    = slv_reg2[15:0];
+    assign           aes_reset    = slv_reg0[0];
+    assign           AES_START    = slv_reg0[1];
+    assign           aes_key_size = slv_reg0[5:4];
+
+    assign           NUMBER_BLOCKS    = slv_reg2[15:0];
+
+    assign           aes_key_255_224 = slv_reg3;
+    assign           aes_key_223_192 = slv_reg4;
+    assign           aes_key_191_160 = slv_reg5;
+    assign           aes_key_159_128 = slv_reg6;
+    assign           aes_key_127_96  = slv_reg7;
+    assign           aes_key_95_64   = slv_reg8;
+    assign           aes_key_63_32   = slv_reg9;
+    assign           aes_key_31_0    = slv_reg10;
+
+    assign           ctr_iv_127_96   = slv_reg11;
+    assign           ctr_iv_95_64    = slv_reg12;
+    assign           ctr_iv_63_32    = slv_reg13;
+    assign           ctr_iv_31_0     = slv_reg14;
+
+    wire aes_key[255:0] = {
+        aes_key_255_224,
+        aes_key_223_192,
+        aes_key_191_160,
+        aes_key_159_128,
+        aes_key_127_96,
+        aes_key_95_64,
+        aes_key_63_32,
+        aes_key_31_0
+    };
+
+    wire ctr_iv[127:0] = {
+        ctr_iv_127_96,
+        ctr_iv_95_64,
+        ctr_iv_63_32,
+        ctr_iv_31_0
+    };
      
     dfsm dfsm(
         .clk(aes_clk),
@@ -777,7 +818,9 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
 
         .start(AES_START),
 
-        .aes_block_size(block_size),
+        .aes_key_size(aes_key_size),
+        .aes_key(aes_key),
+        .ctr_iv(ctr_iv),
         
         // user signals
         .ocm_data_out(ocm_data_out),
@@ -787,7 +830,13 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
         .init_master_txn(init_master_txn),
         .read_done(TXN_DONE),
         .read_active(read_active),
+
+        .output_fifo_read_en(output_fifo_read_en),
+        .output_fifo_read_data(output_fifo_read_data),
+        .output_fifo_empty(output_fifo_empty),
+        
         .NUMBER_BLOCKS(NUMBER_BLOCKS),
+
         .debug(debug),
         .out_ready(AES_DONE)
     );

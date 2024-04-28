@@ -13,7 +13,7 @@ module dfsm (
 
     input wire [1:0] aes_key_size,
     input wire [255:0] aes_key,
-    input wire [127:0] ctr_seed,
+    input wire [127:0] ctr_iv,
 
     input [127:0] ocm_data_out,
     input bus_data_valid,
@@ -22,6 +22,10 @@ module dfsm (
     output reg init_master_txn,
     input wire read_done,
     input read_active,
+
+    input wire output_fifo_read_en,
+    output wire [127:0] output_fifo_read_data,
+    output wire output_fifo_empty,
 
     input wire [15:0] number_blocks,
 
@@ -85,8 +89,8 @@ module dfsm (
         .rst(reset),
         .write_data(aes_fifo_read_data[127:0] ^ aes_128_out[127:0]),
         .write_en(output_fifo_write_en),
-        .read_en(),
-        .read_data(),
+        .read_en(output_fifo_read_en),
+        .read_data(output_fifo_read_data[127:0]),
         .fifo_full(output_fifo_full),
         .fifo_half_full(output_fifo_half_full),
         .fifo_empty(output_fifo_empty)
@@ -166,6 +170,7 @@ module dfsm (
     always @(posedge clk) begin
         if (reset) begin
             aes_fifo_read_en <= 0;
+            output_fifo_write_en <= 0;
         end
         else begin
             if (aes_key_size == `AES_128) begin
@@ -221,7 +226,7 @@ module dfsm (
                 end
                 4'd2: begin
                     // start delay pipe to wait for aes_128 to finish
-                    aes_128_in <= ctr_seed;
+                    aes_128_in <= ctr_iv;
                     delay_pipe[0] <= 1;
 
                     // move from bus fifo to aes fifo

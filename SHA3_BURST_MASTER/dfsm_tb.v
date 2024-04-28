@@ -30,7 +30,7 @@ reg start;
 
 reg [1:0] aes_key_size;
 reg [255:0] aes_key;
-reg [127:0] ctr_seed;
+reg [127:0] ctr_iv;
 
 reg [127:0] ocm_data_out;
 reg bus_data_valid;
@@ -39,6 +39,10 @@ wire [31:0] read_addr_index;
 wire init_master_txn;
 reg read_done;
 reg read_active;
+
+reg output_fifo_read_en;
+wire [127:0] output_fifo_read_data;
+wire output_fifo_empty;
 
 reg [15:0] number_blocks;
 
@@ -53,7 +57,7 @@ dfsm my_dfsm (
 
     .aes_key_size(aes_key_size),
     .aes_key(aes_key),
-    .ctr_seed(ctr_seed),
+    .ctr_iv(ctr_iv),
 
     .ocm_data_out(ocm_data_out),
     .bus_data_valid(bus_data_valid),
@@ -62,6 +66,10 @@ dfsm my_dfsm (
     .init_master_txn(init_master_txn),
     .read_done(read_done),
     .read_active(read_active),
+
+    .output_fifo_read_en(output_fifo_read_en),
+    .output_fifo_read_data(output_fifo_read_data),
+    .output_fifo_empty(output_fifo_empty),
     
     .number_blocks(number_blocks),
 
@@ -81,12 +89,14 @@ initial begin
     ocm_data_out = 128'b0;
     aes_key_size = 2'b00;
     aes_key = 256'b0;
-    ctr_seed = 128'd10;
+    ctr_iv = 128'd10;
 
     bus_data_valid = 0;
     read_done = 0;
     read_active = 0;
     number_blocks = 0;
+
+    output_fifo_read_en = 0;
     
     #5
     rst = 0;
