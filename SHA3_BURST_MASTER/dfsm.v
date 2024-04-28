@@ -103,6 +103,7 @@ module dfsm (
 
     reg [1:0] read_state;
     reg [15:0] blocks_to_read;
+    reg [31:0] bus_fifo_count;
 
     // this state machine will read words from the bus_fifo
     always @(posedge clk) begin
@@ -111,6 +112,7 @@ module dfsm (
             read_state <= 2'b11;
             init_master_txn <= 0;
             blocks_to_read <= 0;
+            bus_fifo_count <= 0;
         end
         else begin
             case (read_state)
@@ -128,6 +130,7 @@ module dfsm (
                     init_master_txn <= 0;
                     if (read_active)
                         read_state <= 2'b10;
+                        bus_fifo_count <= bus_fifo_count + 1;
                     else
                         read_state <= 2'b01;
                 end
@@ -169,11 +172,13 @@ module dfsm (
         end
     end
 
+    reg [31:0] output_fifo_count;
     // aes output handling
     always @(posedge clk) begin
         if (reset) begin
             aes_fifo_read_en <= 0;
             output_fifo_write_en <= 0;
+            output_fifo_count <= 32'b0;
         end
         else begin
             if (aes_key_size == `AES_128) begin
@@ -183,6 +188,7 @@ module dfsm (
                 else if (delay_pipe[20] == 1) begin
                     aes_fifo_read_en <= 0;
                     output_fifo_write_en <= 1;
+                    output_fifo_count <= output_fifo_count + 1;
                 end
                 else if (delay_pipe[21] == 1) begin
                     output_fifo_write_en <= 0;
@@ -196,6 +202,9 @@ module dfsm (
 
     reg [127:0] counter;
 
+    reg [31:0] aes_fifo_count;
+
+    // aes fifo
     always @(posedge clk) begin
         if (reset) begin
             state <= 4'd0;
@@ -205,6 +214,7 @@ module dfsm (
             aes_128_in <= 0;
             aes_fifo_write_en <= 0;
             counter <= 0;
+            aes_fifo_count <= 0;
         end
         else begin
             case (state)
@@ -220,6 +230,7 @@ module dfsm (
                     if (~fifo_empty && ~aes_fifo_full && blocks_to_process > 0) begin
                         fifo_read_en <= 1;
                         blocks_to_process <= blocks_to_process - 1;
+                        aes_fifo_count <= aes_fifo_count + 1;
 
                         state <= 4'd2;
                     end
@@ -256,6 +267,10 @@ module dfsm (
             endcase
         end
     end
+
+    assign debug[95:64] = output_fifo_count;
+    assign debug[63:32] = aes_fifo_count;
+    assign debug[31:0] = bus_fifo_count;
 
     assign out_ready = write_finished && output_fifo_empty && aes_fifo_empty && fifo_empty && blocks_to_read == 0 && blocks_to_process == 0;
 

@@ -34,9 +34,9 @@ uint32_t timer_value;
 
 void
 sighandler(int signo) {
-	if (signo == SIGIO) {
-		timer_value = timer_regs[2] * 1000 / 300;  // convert to ns
-	}
+	// if (signo == SIGIO) {
+	// 	timer_value = timer_regs[2] * 1000 / 300;  // convert to ns
+	// }
 
 	return; /* Return to main loop */
 }
@@ -220,6 +220,14 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 	*apll_ctrl = 0x2D00;
 }
 
+// string to hex
+int
+s_to_h(char *str) {
+    int lh = str[0] <= '9' ? str[0] - '0' : str[0] - 'A' + 10;
+    int rh = str[1] <= '9' ? str[1] - '0' : str[1] - 'A' + 10;
+    return lh * 16 + rh;
+}
+
 int
 main(int argc, char *argv[]) {
 	srand(time(0));
@@ -262,31 +270,29 @@ main(int argc, char *argv[]) {
     //     fclose(file);
     // }
 
-	set_clock(PS_CLK_1499_MHZ, PL_CLK_150_MHZ);
+	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 	setup_capture_timer_interrupt();
 
 	for (int i = 0; i < 128/8; i++) {
         ocm_regs[i] = 0;
+        printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
     }
 
     // in hex
     char aes_key[] = "00112233445566778899AABBCCDDEEFF";
 
     // regs 3-10 are for 256 bit key, 7-10 are for 128
-    aes_regs[7] = atoi(aes_key[0]) << 24 | atoi(aes_key[1]) << 16 | atoi(aes_key[2]) << 8 | atoi(aes_key[3]);
-    aes_regs[8] = atoi(aes_key[4]) << 24 | atoi(aes_key[5]) << 16 | atoi(aes_key[6]) << 8 | atoi(aes_key[7]);
-    aes_regs[9] = atoi(aes_key[8]) << 24 | atoi(aes_key[9]) << 16 | atoi(aes_key[10]) << 8 | atoi(aes_key[11]);
-    aes_regs[10] = atoi(aes_key[12]) << 24 | atoi(aes_key[13]) << 16 | atoi(aes_key[14]) << 8 | atoi(aes_key[15]);
-
-    printf("%h\n", aes_regs[7]);
-    printf("%h\n", aes_regs[8]);
-    printf("%h\n", aes_regs[9]);
-    printf("%h\n", aes_regs[10]);
-
-    // set IV
+	aes_regs[7] = (s_to_h(&aes_key[0]) << 24) | (s_to_h(&aes_key[2]) << 16) | (s_to_h(&aes_key[4]) << 8) | s_to_h(&aes_key[6]);
+    aes_regs[8] = (s_to_h(&aes_key[8]) << 24) | (s_to_h(&aes_key[10]) << 16) | (s_to_h(&aes_key[12]) << 8) | s_to_h(&aes_key[14]);
+	aes_regs[9] = (s_to_h(&aes_key[16]) << 24) | (s_to_h(&aes_key[18]) << 16) |
+	              (s_to_h(&aes_key[20]) << 8) | s_to_h(&aes_key[22]);
+	aes_regs[10] = (s_to_h(&aes_key[24]) << 24) | (s_to_h(&aes_key[26]) << 16) |
+	               (s_to_h(&aes_key[28]) << 8) | s_to_h(&aes_key[30]);
+                   
+	// set IV
     uint64_t iv = 0x0;
-    aes_regs[11] = iv >> 32;
-    aes_regs[12] = iv & 0xFFFFFFFF;
+	aes_regs[11] = iv >> 32;
+	aes_regs[12] = iv & 0xFFFFFFFF;
 
 	// set number_blocks
 	aes_regs[2] = 1;
@@ -301,11 +307,16 @@ main(int argc, char *argv[]) {
 	// start
 	aes_regs[0] |= 0b10;
 
-	// wait until keccak done
-	while (!(aes_regs[1] & 0b1000)) {}
+	// wait until aes done
+	while (!(aes_regs[1] & 0b10)) {}
 
-	for (int i = 16; i < 32; i++) { printf("0x%08X\n", aes_regs[i]); }
-	printf("\nTimer value: %d nanoseconds\n", timer_value);
+	for (int i = 0; i < 128/8; i++) {
+        ocm_regs[i] = 0;
+        printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
+    }
+
+	// for (int i = 16; i < 32; i++) { printf("0x%08X\n", aes_regs[i]); }
+	// printf("\nTimer value: %d nanoseconds\n", timer_value);
 
 	aes_regs[0] = 0b00;
 
