@@ -34,8 +34,6 @@ module dfsm (
     output wire out_ready
 );
 
-    assign debug = 0;
-
     reg [3:0] state;
     
     wire [127:0] aes_128_out;

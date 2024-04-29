@@ -318,7 +318,7 @@ main(int argc, char *argv[]) {
 	// for (int i = 16; i < 32; i++) { printf("0x%08X\n", aes_regs[i]); }
 	// printf("\nTimer value: %d nanoseconds\n", timer_value);
 
-	aes_regs[0] = 0b00;
+	// aes_regs[0] = 0b00;
 
 	unmap_regs();
 }
