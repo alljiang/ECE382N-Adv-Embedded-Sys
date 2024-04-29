@@ -118,6 +118,7 @@ module dfsm (
                     if (blocks_to_read > 0) begin
                         init_master_txn <= 1;
                         blocks_to_read <= blocks_to_read - 1;
+                        bus_fifo_count <= bus_fifo_count + 1;
 
                         read_state <= 2'b01;
                     end
@@ -126,9 +127,9 @@ module dfsm (
                 end
                 2'b01: begin
                     init_master_txn <= 0;
-                    if (read_active)
+                    if (read_active) begin
                         read_state <= 2'b10;
-                        bus_fifo_count <= bus_fifo_count + 1;
+                    end
                     else
                         read_state <= 2'b01;
                 end
@@ -136,6 +137,7 @@ module dfsm (
                     if (read_done) begin
                         read_state <= 2'b00;
                         read_addr_index <= read_addr_index + 1;
+                        bus_fifo_count <= bus_fifo_count + 1;
                     end
                     else
                         read_state <= 2'b10;
