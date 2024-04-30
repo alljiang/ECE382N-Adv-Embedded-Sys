@@ -295,7 +295,7 @@ main(int argc, char *argv[]) {
 	aes_regs[12] = iv & 0xFFFFFFFF;
 
 	// set number_blocks
-	aes_regs[2] = 1;
+	aes_regs[2] = 2;
 
 	// reset
 	aes_regs[0] = 0b1;

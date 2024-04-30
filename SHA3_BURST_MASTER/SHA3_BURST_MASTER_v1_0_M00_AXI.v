@@ -250,13 +250,15 @@
 
     assign write_finished = writes_done;
 
+    reg [15:0] write_index;
 
 	// I/O Connections assignments
 
 	//I/O Connections. Write Address (AW)
 	assign M_AXI_AWID	= 'b0;
 	//The AXI address is a concatenation of the target base address + active offset range
-	assign M_AXI_AWADDR	= C_M_TARGET_SLAVE_BASE_ADDR + axi_awaddr;
+	// assign M_AXI_AWADDR	= C_M_TARGET_SLAVE_BASE_ADDR + axi_awaddr;
+	assign M_AXI_AWADDR	= C_M_TARGET_SLAVE_BASE_ADDR + (write_index - 1) * 16;
 	//Burst LENgth is number of transaction beats, minus 1
 	assign M_AXI_AWLEN	= C_M_AXI_BURST_LEN - 1;
 	//Size should be C_M_AXI_DATA_WIDTH, in 2^SIZE bytes, otherwise narrow bursts are used
@@ -823,11 +825,13 @@
             output_fifo_read_en <= 1'b0;
             start_single_burst_write <= 1'b0;
             my_count <= 0;
+            write_index <= 0;
         end 
         else if (~output_fifo_empty && ~axi_awvalid && ~start_single_burst_write && ~burst_write_active) begin     
             output_fifo_read_en <= 1'b1;
             start_single_burst_write <= 1'b1;                
             my_count <= my_count + 1;
+            write_index <= write_index + 1;
         end
         else begin
             output_fifo_read_en <= 1'b0;
