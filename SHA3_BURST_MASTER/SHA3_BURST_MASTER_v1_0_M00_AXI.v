@@ -795,9 +795,9 @@
 
     reg [31:0] set_addr;
     reg [31:0] set_val;
-    assign debug_master[63:32] = set_val;
-    assign debug_master[31:0] = {31'b0, axi_wlast};
-    // assign debug_master[31:0] = set_addr;
+    reg [15:0] my_count;
+    assign debug_master[63:32] = set_addr;
+    assign debug_master[31:0] = {14'b0, burst_write_active, writes_done, my_count};
 
     always @(posedge M_AXI_ACLK) begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
@@ -811,7 +811,7 @@
             end
 
             if (M_AXI_WREADY & M_AXI_WVALID) begin
-                set_val <= M_AXI_WDATA;
+                set_val <= M_AXI_WDATA[127:96];
             end
 
         end
@@ -822,10 +822,12 @@
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
             output_fifo_read_en <= 1'b0;
             start_single_burst_write <= 1'b0;
+            my_count <= 0;
         end 
         else if (~output_fifo_empty && ~axi_awvalid && ~start_single_burst_write && ~burst_write_active) begin     
             output_fifo_read_en <= 1'b1;
             start_single_burst_write <= 1'b1;                
+            my_count <= my_count + 1;
         end
         else begin
             output_fifo_read_en <= 1'b0;
