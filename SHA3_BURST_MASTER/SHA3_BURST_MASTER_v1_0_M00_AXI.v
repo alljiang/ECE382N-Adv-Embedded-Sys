@@ -733,7 +733,7 @@
 	      end                                                                                                   
 	    else                                                                                                    
 	      read_burst_counter <= read_burst_counter;                                                             
-7	  end                                                                                                       
+	  end                                                                                                       
 	                                                                                                            
 	                                                                                                            
 	  //implement master command interface state machine                                                        
