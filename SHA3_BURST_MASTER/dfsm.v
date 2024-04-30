@@ -268,9 +268,6 @@ module dfsm (
         end
     end
 
-    assign debug[95:64] = output_fifo_count;
-    assign debug[63:32] = aes_fifo_count;
-    assign debug[31:0] = bus_fifo_count;
     // assign debug[127:96] = {31'b0, read_done};
     // assign debug[95:64] = {31'b0, read_active};
     // assign debug[63:32] = {30'b0, read_state};

@@ -733,7 +733,7 @@
 	      end                                                                                                   
 	    else                                                                                                    
 	      read_burst_counter <= read_burst_counter;                                                             
-	  end                                                                                                       
+7	  end                                                                                                       
 	                                                                                                            
 	                                                                                                            
 	  //implement master command interface state machine                                                        
@@ -793,21 +793,38 @@
 	      end                                                                                                   
 	  end //MASTER_EXECUTION_PROC      
 
-    reg [31:0] write_count;
-    assign debug_master[31:0] = write_count;
-    assign debug_master[63:32] = M_AXI_WDATA[127:96];
+    reg [31:0] set_addr;
+    reg [31:0] set_val;
+    assign debug_master[31:0] = set_addr;
+    assign debug_master[63:32] = set_val;
+
+    always @(posedge M_AXI_ACLK) begin
+        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
+            set_addr <= 32'hABCDEFFF;
+            set_val <= 32'hFFFEDCBA;
+        end 
+        else begin
+
+            if (M_AXI_AWREADY & M_AXI_AWVALID) begin
+                set_addr <= M_AXI_AWADDR;
+            end
+
+            if (M_AXI_WREADY & M_AXI_WVALID) begin
+                set_val <= M_AXI_WDATA;
+            end
+
+        end
+    end
 
     // fifo writeback logic
     always @(posedge M_AXI_ACLK) begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
             output_fifo_read_en <= 1'b0;
-            write_count <= 32'b0;
             start_single_burst_write <= 1'b0;
         end 
         else if (~output_fifo_empty && ~axi_awvalid && ~start_single_burst_write && ~burst_write_active) begin     
             output_fifo_read_en <= 1'b1;
             start_single_burst_write <= 1'b1;                
-            write_count <= write_count + 1;
         end
         else begin
             output_fifo_read_en <= 1'b0;
