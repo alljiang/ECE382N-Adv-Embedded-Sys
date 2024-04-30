@@ -795,8 +795,9 @@
 
     reg [31:0] set_addr;
     reg [31:0] set_val;
-    assign debug_master[31:0] = set_addr;
     assign debug_master[63:32] = set_val;
+    assign debug_master[31:0] = {31'b0, axi_wlast};
+    // assign debug_master[31:0] = set_addr;
 
     always @(posedge M_AXI_ACLK) begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
