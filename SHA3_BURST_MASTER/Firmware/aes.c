@@ -26,11 +26,13 @@ uint32_t *pl_clk_reg;
 #define ADDRESS_AES_SLAVE 0xB0000000
 #define ADDRESS_CAPTURE_TIMER_SLAVE 0xB0002000
 
-#define AES_KEY_SIZE_128 0b00
-#define AES_KEY_SIZE_192 0b01
-#define AES_KEY_SIZE_256 0b10
-
 uint32_t timer_value;
+
+enum AES_KEY_SIZE {
+	AES_KEY_SIZE_128 = 0b00,
+	AES_KEY_SIZE_192 = 0b01,
+	AES_KEY_SIZE_256 = 0b10
+};
 
 void
 sighandler(int signo) {
@@ -240,20 +242,20 @@ initialize_stuff() {
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 	setup_capture_timer_interrupt();
 
-    return 0;
+	return 0;
 }
 
 void
 set_plaintext(char *data, int32_t num_blocks) {
-    // each block is 128 bits (16 bytes)
+	// each block is 128 bits (16 bytes)
 	for (int i = 0; i < 4 * num_blocks; i++) {
-        uint32_t full_byte = 0;
-        for (int j = 0; j < 4; j++) {
-            if (i == 0)
-                full_byte = (full_byte << 8) | data[i * 4 + j];
-            else
-                full_byte = (full_byte << 8) | 0xFF;
-        }
+		uint32_t full_byte = 0;
+		for (int j = 0; j < 4; j++) {
+			if (i == 0)
+				full_byte = (full_byte << 8) | data[i * 4 + j];
+			else
+				full_byte = (full_byte << 8) | 0xFF;
+		}
 		ocm_regs[i] = full_byte;
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 	}
@@ -262,86 +264,83 @@ set_plaintext(char *data, int32_t num_blocks) {
 	aes_regs[2] = num_blocks;
 }
 
-int
-main(int argc, char *argv[]) {
-    int rv;
+void
+set_aes_key(char *key_in_hex, enum AES_KEY_SIZE key_size) {
+	int reg_offset;
+	int bits;
+	switch (key_size) {
+	case AES_KEY_SIZE_128:
+		reg_offset = 7;
+		bits       = 128;
+		break;
+	case AES_KEY_SIZE_192:
+		reg_offset = 5;
+		bits       = 192;
+		break;
+	case AES_KEY_SIZE_256:
+		reg_offset = 3;
+		bits       = 256;
+		break;
+	}
 
-    rv = initialize_stuff();
-    if (rv != 0) return rv;
-
-	// if (argc != 3) {
-	//     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
-	//     return 1;
-	// }
-
-	// if (strcmp(argv[1], "-s") != 0 && strcmp(argv[1], "-f") != 0) {
-	//     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
-	//     return 1;
-	// }
-
-	// char *test_string;
-	// uint16_t test_string_length;
-	// if (strcmp(argv[1], "-s") == 0) {
-	//     printf("String: \'%s\'\n", argv[2]);
-	// 	test_string_length = strlen(argv[2]);
-	//     test_string = argv[2];
-	// } else {
-	//     printf("File: %s\n", argv[2]);
-	//     FILE *file = fopen(argv[2], "r");
-	//     if (file == NULL) {
-	//         printf("Error opening file\n");
-	//         return 1;
-	//     }
-
-	//     fseek(file, 0, SEEK_END);
-	//     test_string_length = ftell(file);
-
-	//     test_string = malloc(test_string_length);
-	//     fseek(file, 0, SEEK_SET);
-	//     fread(test_string, 1, test_string_length, file);
-	//     fclose(file);
-	// }
-
-	// set_plaintext("abcdefghijklmnop", 1);
-	set_plaintext("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1);
-
-	// time calculation code
-    clock_t start_time;
-	start_time = clock();
-
-	// in hex
-	char aes_key[] = "00112233445566778899AABBCCDDEEFF";
-
-	// regs 3-10 are for 256 bit key, 7-10 are for 128
-	aes_regs[7] = (s_to_h(&aes_key[0]) << 24) | (s_to_h(&aes_key[2]) << 16) |
-	              (s_to_h(&aes_key[4]) << 8) | s_to_h(&aes_key[6]);
-	aes_regs[8] = (s_to_h(&aes_key[8]) << 24) | (s_to_h(&aes_key[10]) << 16) |
-	              (s_to_h(&aes_key[12]) << 8) | s_to_h(&aes_key[14]);
-	aes_regs[9] = (s_to_h(&aes_key[16]) << 24) | (s_to_h(&aes_key[18]) << 16) |
-	              (s_to_h(&aes_key[20]) << 8) | s_to_h(&aes_key[22]);
-	aes_regs[10] = (s_to_h(&aes_key[24]) << 24) | (s_to_h(&aes_key[26]) << 16) |
-	               (s_to_h(&aes_key[28]) << 8) | s_to_h(&aes_key[30]);
-
-	// set IV
-	uint64_t iv  = 0x0;
-	aes_regs[11] = iv >> 32;
-	aes_regs[12] = iv & 0xFFFFFFFF;
-
-	// reset
-	aes_regs[0] = 0b1;
-	aes_regs[0] = 0b0;
+	for (int i = 0; i < bits / 32; i++) {
+		aes_regs[i + reg_offset] = (s_to_h(&key_in_hex[i * 8]) << 24) |
+		                           (s_to_h(&key_in_hex[i * 8 + 2]) << 16) |
+		                           (s_to_h(&key_in_hex[i * 8 + 4]) << 8) |
+		                           s_to_h(&key_in_hex[i * 8 + 6]);
+	}
 
 	// set key size
 	aes_regs[0] = (AES_KEY_SIZE_128 << 4);
+}
+
+void
+set_aes_iv(uint64_t iv_upper_half, uint64_t iv_lower_half) {
+	aes_regs[11] = iv_upper_half >> 32;
+	aes_regs[12] = iv_upper_half & 0xFFFFFFFF;
+	aes_regs[13] = iv_lower_half >> 32;
+	aes_regs[14] = iv_lower_half & 0xFFFFFFFF;
+}
+
+void
+run_accelerator() {
+	// reset
+	aes_regs[0] |= 0b1;
+	aes_regs[0] &= ~0b1;
 
 	// start
 	aes_regs[0] |= 0b10;
 
 	// wait until aes done
 	while (!(aes_regs[1] & 0b10)) {}
+}
 
-	// record end time of AES
-	clock_t time_taken_t;
+int
+main(int argc, char *argv[]) {
+	int rv;
+
+	rv = initialize_stuff();
+	if (rv != 0)
+		return rv;
+
+	// set_plaintext("abcdefghijklmnop", 1);
+	set_plaintext("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1);
+
+	// time calculation code
+	clock_t start_time;
+	start_time = clock();
+
+	// in hex
+	char aes_key_hex_str[] = "00112233445566778899AABBCCDDEEFF";
+	set_aes_key(aes_key_hex_str, AES_KEY_SIZE_128);
+
+	// set my 128-bit IV
+	set_aes_iv(0, 0);
+
+	run_accelerator();
+
+    // record end time of AES
+    clock_t time_taken_t;
 	time_taken_t      = clock() - start_time;
 	double time_taken = ((double) time_taken_t) / CLOCKS_PER_SEC;  // in seconds
 
@@ -350,11 +349,6 @@ main(int argc, char *argv[]) {
 	for (int i = 0; i < 4; i++) {
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 	}
-
-	// for (int i = 16; i < 32; i++) { printf("0x%08X\n", aes_regs[i]); }
-	// printf("\nTimer value: %d nanoseconds\n", timer_value);
-
-	// aes_regs[0] = 0b00;
 
 	unmap_regs();
 }
