@@ -7,7 +7,7 @@ CC := /usr/bin/gcc -g
 # no need to list the source files explicitly.
 
 # obj-m := timer_interrupt.o 
-obj-m := timer_interrupt.o
+# obj-m := timer_interrupt.o
 
 # KDIR is the location of the kernel source.  The current standard is
 # to link to the associated source tree from the directory containing
@@ -28,13 +28,13 @@ PWD   := $(shell pwd)
 
 default:
 	$(MAKE) -j4 -C $(KDIR) M=$(PWD) modules
-	$(CC)  test_keccak-512.c -o test_keccak-512 -lm
+	$(CC)  aes.c -o aes -lm
 
 #csv:
 #	$(CC)  intr_latency_csv.c -o intr_latency_csv
 
 	
 clean::
-	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe test_keccak-512
+	$(RM) .skeleton* *.cmd *.o *.ko *.mod.c *.exe aes
 	$(RM) -R .tmp*
 

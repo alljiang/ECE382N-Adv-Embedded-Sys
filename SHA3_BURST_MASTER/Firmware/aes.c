@@ -87,7 +87,7 @@ map_regs() {
 		return -1;
 
 	ocm_regs =
-	    mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, dh, ADDRESS_OCM);
+	    mmap(NULL, 16*1024*1024, PROT_READ | PROT_WRITE, MAP_SHARED, dh, ADDRESS_OCM);
 
 	timer_regs = mmap(NULL,
 	                  32,
