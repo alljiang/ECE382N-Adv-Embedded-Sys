@@ -135,7 +135,6 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     wire            BUFFER_FULL;
     wire            aes_reset;
     wire [31:0]     START_ADDRESS;
-    wire [15:0]     NUMBER_BLOCKS;
     
     wire [511:0]    keccak_hash_reg;                    // Keccak Results
     wire            keccak_complete;
@@ -781,7 +780,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     assign           AES_START    = slv_reg0[1];
     assign           aes_key_size = slv_reg0[5:4];
 
-    wire [15:0] number_blocks = slv_reg2[15:0];
+    wire [31:0] number_blocks = slv_reg2[15:0];
 
     wire [255:0] aes_key;
     assign aes_key[255:224] = slv_reg3;

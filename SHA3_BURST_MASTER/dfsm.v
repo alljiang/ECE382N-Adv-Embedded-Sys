@@ -28,7 +28,7 @@ module dfsm (
     output wire output_fifo_empty,
     input wire write_finished,
 
-    input wire [15:0] number_blocks,
+    input wire [31:0] number_blocks,
 
     output wire [191:0] debug,
     output wire out_ready
@@ -37,6 +37,8 @@ module dfsm (
     reg [3:0] state;
     
     wire [127:0] aes_128_out;
+    wire [127:0] aes_192_out;
+    wire [127:0] aes_256_out;
     reg [127:0] aes_128_in;
 
     aes_128 aes_128_top (
@@ -44,6 +46,20 @@ module dfsm (
         .state(aes_128_in[127:0]),
         .key(aes_key[127:0]),
         .out(aes_128_out[127:0])
+    );
+
+    aes_192 aes_192_top (
+        .clk(clk),
+        .state(aes_128_in[127:0]),
+        .key(aes_key[191:0]),
+        .out(aes_192_out[127:0])
+    );
+
+    aes_256 aes_256_top (
+        .clk(clk),
+        .state(aes_128_in[127:0]),
+        .key(aes_key[255:0]),
+        .out(aes_256_out[127:0])
     );
 
     reg fifo_read_en;
@@ -85,10 +101,12 @@ module dfsm (
 
     reg output_fifo_write_en;
 
+    reg [127:0] aes_output;
+
     Bus_FIFO #(16) output_fifo (
         .clk(clk),
         .rst(reset),
-        .write_data(aes_fifo_read_data[127:0] ^ aes_128_out[127:0]),
+        .write_data(aes_fifo_read_data[127:0] ^ aes_output),
         .write_en(output_fifo_write_en),
         .read_en(output_fifo_read_en),
         .read_data(output_fifo_read_data[127:0]),
@@ -97,10 +115,22 @@ module dfsm (
         .fifo_empty(output_fifo_empty)
     );
 
+    always @(*) begin
+        if (aes_key_size == `AES_128) begin
+            aes_output = {aes_128_out[31:0], aes_128_out[63:32], aes_128_out[95:64], aes_128_out[127:96]};
+        end
+        else if (aes_key_size == `AES_192) begin
+            aes_output = {aes_192_out[31:0], aes_192_out[63:32], aes_192_out[95:64], aes_192_out[127:96]};
+        end
+        else if (aes_key_size == `AES_256) begin
+            aes_output = {aes_256_out[31:0], aes_256_out[63:32], aes_256_out[95:64], aes_256_out[127:96]};
+        end
+    end
+
     assign dfsm_read_ready = ~fifo_half_full;
 
     reg [1:0] read_state;
-    reg [15:0] blocks_to_read;
+    reg [31:0] blocks_to_read;
     reg [31:0] bus_fifo_count;
 
     // this state machine will read words from the bus_fifo
@@ -156,7 +186,7 @@ module dfsm (
         end
     end
 
-    reg [15:0] blocks_to_process;
+    reg [31:0] blocks_to_process;
     reg [28:0] delay_pipe;
 
     // series of flip-flops for counting delays
@@ -191,6 +221,38 @@ module dfsm (
                     output_fifo_count <= output_fifo_count + 1;
                 end
                 else if (delay_pipe[21] == 1) begin
+                    output_fifo_write_en <= 0;
+                end
+                else begin
+                    aes_fifo_read_en <= 0;              
+                end
+            end
+            else if (aes_key_size == `AES_192) begin
+                if (delay_pipe[23] == 1) begin
+                    aes_fifo_read_en <= 1;
+                end
+                else if (delay_pipe[24] == 1) begin
+                    aes_fifo_read_en <= 0;
+                    output_fifo_write_en <= 1;
+                    output_fifo_count <= output_fifo_count + 1;
+                end
+                else if (delay_pipe[25] == 1) begin
+                    output_fifo_write_en <= 0;
+                end
+                else begin
+                    aes_fifo_read_en <= 0;              
+                end
+            end
+            else if (aes_key_size == `AES_256) begin
+                if (delay_pipe[27] == 1) begin
+                    aes_fifo_read_en <= 1;
+                end
+                else if (delay_pipe[28] == 1) begin
+                    aes_fifo_read_en <= 0;
+                    output_fifo_write_en <= 1;
+                    output_fifo_count <= output_fifo_count + 1;
+                end
+                else if (delay_pipe[29] == 1) begin
                     output_fifo_write_en <= 0;
                 end
                 else begin

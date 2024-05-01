@@ -1,6 +1,6 @@
 
-#include <malloc.h>
 #include <fcntl.h>
+#include <malloc.h>
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -223,13 +223,13 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 // string to hex
 int
 s_to_h(char *str) {
-    int lh = str[0] <= '9' ? str[0] - '0' : str[0] - 'A' + 10;
-    int rh = str[1] <= '9' ? str[1] - '0' : str[1] - 'A' + 10;
-    return lh * 16 + rh;
+	int lh = str[0] <= '9' ? str[0] - '0' : str[0] - 'A' + 10;
+	int rh = str[1] <= '9' ? str[1] - '0' : str[1] - 'A' + 10;
+	return lh * 16 + rh;
 }
 
 int
-main(int argc, char *argv[]) {
+initialize_stuff() {
 	srand(time(0));
 
 	if (map_regs() == -1) {
@@ -237,76 +237,102 @@ main(int argc, char *argv[]) {
 		return 1;
 	}
 
-    // if (argc != 3) {
-    //     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
-    //     return 1;    
-    // }
-
-    // if (strcmp(argv[1], "-s") != 0 && strcmp(argv[1], "-f") != 0) {
-    //     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
-    //     return 1;
-    // }
-
-    // char *test_string;
-    // uint16_t test_string_length;
-    // if (strcmp(argv[1], "-s") == 0) {
-    //     printf("String: \'%s\'\n", argv[2]);
-	// 	test_string_length = strlen(argv[2]);
-    //     test_string = argv[2];
-	// } else {
-    //     printf("File: %s\n", argv[2]);
-    //     FILE *file = fopen(argv[2], "r");
-    //     if (file == NULL) {
-    //         printf("Error opening file\n");
-    //         return 1;
-    //     }
-
-    //     fseek(file, 0, SEEK_END);
-    //     test_string_length = ftell(file);
-
-    //     test_string = malloc(test_string_length);
-    //     fseek(file, 0, SEEK_SET);
-    //     fread(test_string, 1, test_string_length, file);
-    //     fclose(file);
-    // }
-
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
 	setup_capture_timer_interrupt();
 
-	for (int i = 0; i < 128/8; i++) {
-        ocm_regs[i] = 0;
-        printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
-    }
+    return 0;
+}
+
+void
+set_plaintext(char *data, int32_t num_blocks) {
+    // each block is 128 bits (16 bytes)
+	for (int i = 0; i < 4 * num_blocks; i++) {
+        uint32_t full_byte = 0;
+        for (int j = 0; j < 4; j++) {
+            if (i == 0)
+                full_byte = (full_byte << 8) | data[i * 4 + j];
+            else
+                full_byte = (full_byte << 8) | 0xFF;
+        }
+		ocm_regs[i] = full_byte;
+		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
+	}
+
+	// set number_blocks
+	aes_regs[2] = num_blocks;
+}
+
+int
+main(int argc, char *argv[]) {
+    int rv;
+
+    rv = initialize_stuff();
+    if (rv != 0) return rv;
+
+	// if (argc != 3) {
+	//     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
+	//     return 1;
+	// }
+
+	// if (strcmp(argv[1], "-s") != 0 && strcmp(argv[1], "-f") != 0) {
+	//     printf("Usage: -s \"string\" or -f \"file.txt\"\n");
+	//     return 1;
+	// }
+
+	// char *test_string;
+	// uint16_t test_string_length;
+	// if (strcmp(argv[1], "-s") == 0) {
+	//     printf("String: \'%s\'\n", argv[2]);
+	// 	test_string_length = strlen(argv[2]);
+	//     test_string = argv[2];
+	// } else {
+	//     printf("File: %s\n", argv[2]);
+	//     FILE *file = fopen(argv[2], "r");
+	//     if (file == NULL) {
+	//         printf("Error opening file\n");
+	//         return 1;
+	//     }
+
+	//     fseek(file, 0, SEEK_END);
+	//     test_string_length = ftell(file);
+
+	//     test_string = malloc(test_string_length);
+	//     fseek(file, 0, SEEK_SET);
+	//     fread(test_string, 1, test_string_length, file);
+	//     fclose(file);
+	// }
+
+	// set_plaintext("abcdefghijklmnop", 1);
+	set_plaintext("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1);
 
 	// time calculation code
-	clock_t start_time; 
-    start_time = clock();
+    clock_t start_time;
+	start_time = clock();
 
-    // in hex
-    char aes_key[] = "00112233445566778899AABBCCDDEEFF";
+	// in hex
+	char aes_key[] = "00112233445566778899AABBCCDDEEFF";
 
-    // regs 3-10 are for 256 bit key, 7-10 are for 128
-	aes_regs[7] = (s_to_h(&aes_key[0]) << 24) | (s_to_h(&aes_key[2]) << 16) | (s_to_h(&aes_key[4]) << 8) | s_to_h(&aes_key[6]);
-    aes_regs[8] = (s_to_h(&aes_key[8]) << 24) | (s_to_h(&aes_key[10]) << 16) | (s_to_h(&aes_key[12]) << 8) | s_to_h(&aes_key[14]);
+	// regs 3-10 are for 256 bit key, 7-10 are for 128
+	aes_regs[7] = (s_to_h(&aes_key[0]) << 24) | (s_to_h(&aes_key[2]) << 16) |
+	              (s_to_h(&aes_key[4]) << 8) | s_to_h(&aes_key[6]);
+	aes_regs[8] = (s_to_h(&aes_key[8]) << 24) | (s_to_h(&aes_key[10]) << 16) |
+	              (s_to_h(&aes_key[12]) << 8) | s_to_h(&aes_key[14]);
 	aes_regs[9] = (s_to_h(&aes_key[16]) << 24) | (s_to_h(&aes_key[18]) << 16) |
 	              (s_to_h(&aes_key[20]) << 8) | s_to_h(&aes_key[22]);
 	aes_regs[10] = (s_to_h(&aes_key[24]) << 24) | (s_to_h(&aes_key[26]) << 16) |
 	               (s_to_h(&aes_key[28]) << 8) | s_to_h(&aes_key[30]);
-                   
+
 	// set IV
-    uint64_t iv = 0x0;
+	uint64_t iv  = 0x0;
 	aes_regs[11] = iv >> 32;
 	aes_regs[12] = iv & 0xFFFFFFFF;
-
-	// set number_blocks
-	aes_regs[2] = 2;
 
 	// reset
 	aes_regs[0] = 0b1;
 	aes_regs[0] = 0b0;
 
-    // set key size
-    aes_regs[0] = (AES_KEY_SIZE_128 << 4);
+	// set key size
+	aes_regs[0] = (AES_KEY_SIZE_128 << 4);
 
 	// start
 	aes_regs[0] |= 0b10;
@@ -315,15 +341,15 @@ main(int argc, char *argv[]) {
 	while (!(aes_regs[1] & 0b10)) {}
 
 	// record end time of AES
-	clock_t time_taken_t; 
-	time_taken_t = clock() - start_time; 
-	double time_taken = ((double)time_taken_t)/CLOCKS_PER_SEC; // in seconds
+	clock_t time_taken_t;
+	time_taken_t      = clock() - start_time;
+	double time_taken = ((double) time_taken_t) / CLOCKS_PER_SEC;  // in seconds
 
-	printf("AES took: %f seconds to complete \n", time_taken); 
+	printf("AES took: %f seconds to complete \n", time_taken);
 
-	for (int i = 0; i < 128/8; i++) {
-        printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
-    }
+	for (int i = 0; i < 4; i++) {
+		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
+	}
 
 	// for (int i = 16; i < 32; i++) { printf("0x%08X\n", aes_regs[i]); }
 	// printf("\nTimer value: %d nanoseconds\n", timer_value);
