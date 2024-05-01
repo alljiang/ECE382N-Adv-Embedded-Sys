@@ -349,7 +349,7 @@ main(int argc, char *argv[]) {
     // all other bytes in the rest of the block are padded as 0s. 
     // we want to keep track of the num_blocks to print it out later
 	// int num_blocks = set_plaintext("abcdef", 7);
-	int num_blocks = set_plaintext("12345", 5);
+	int num_blocks = set_plaintext("1234567812345678", 16);
 
 	// time calculation code
 	clock_t start_time;
