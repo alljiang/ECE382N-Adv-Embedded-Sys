@@ -265,7 +265,6 @@ set_plaintext(char *data, int32_t num_bytes) {
             }
 		}
 		ocm_regs[i] = full_word;
-		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 	}
 
 	// set number_blocks
@@ -301,7 +300,7 @@ set_aes_key(char *key_in_hex, enum AES_KEY_SIZE key_size) {
 	}
 
 	// set key size
-	aes_regs[0] = (AES_KEY_SIZE_128 << 4);
+	aes_regs[0] = (key_size << 4);
 }
 
 void
@@ -337,7 +336,7 @@ main(int argc, char *argv[]) {
     /*
     TODO
     use the command line arguments to pass in:
-    - the plaintext (either directly or as a file)
+    - the plaintext as a file
     - the key (and the key size - this can be implied based on the length of the key)
     - the IV
     - output file
@@ -349,14 +348,17 @@ main(int argc, char *argv[]) {
     // pass in the plaintext as a string, second argument is the number of bytes to encrypt
     // all other bytes in the rest of the block are padded as 0s. 
     // we want to keep track of the num_blocks to print it out later
-	int num_blocks = set_plaintext("abcdef", 7);
+	// int num_blocks = set_plaintext("abcdef", 7);
+	int num_blocks = set_plaintext("12345", 5);
 
 	// time calculation code
 	clock_t start_time;
 	start_time = clock();
 
 	// in hex
-	set_aes_key("00112233445566778899AABBCCDDEEFF", AES_KEY_SIZE_128);
+	set_aes_key(
+	    "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF",
+	    AES_KEY_SIZE_256);
 
 	// set my 128-bit IV. This is passed in as 2 64-bit ints
 	set_aes_iv(0, 0);
@@ -368,11 +370,13 @@ main(int argc, char *argv[]) {
 	time_taken_t      = clock() - start_time;
 	double time_taken = ((double) time_taken_t) / CLOCKS_PER_SEC;  // in seconds
 
-	printf("AES took: %f seconds to complete \n", time_taken);
+	printf("AES took: %.02f ns to complete \n", time_taken * 1000000);
 
 	for (int i = 0; i < num_blocks * 4; i++) {
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 	}
+
+    // TODO: output the encrypted data to a file path specified as a command line argument
 
 	unmap_regs();
 }
