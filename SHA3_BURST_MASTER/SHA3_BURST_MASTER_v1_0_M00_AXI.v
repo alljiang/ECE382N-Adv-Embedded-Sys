@@ -258,8 +258,7 @@
 	assign M_AXI_AWID	= 'b0;
 	//The AXI address is a concatenation of the target base address + active offset range
 	// assign M_AXI_AWADDR	= C_M_TARGET_SLAVE_BASE_ADDR + axi_awaddr;
-	// assign M_AXI_AWADDR	= C_M_TARGET_SLAVE_BASE_ADDR + (my_write_index - 1) * 16;
-	assign M_AXI_AWADDR	= 32'hFFFC0000; // alljiang debug
+	assign M_AXI_AWADDR	= C_M_TARGET_SLAVE_BASE_ADDR + (my_write_index - 1) * 16;
 	//Burst LENgth is number of transaction beats, minus 1
 	assign M_AXI_AWLEN	= C_M_AXI_BURST_LEN - 1;
 	//Size should be C_M_AXI_DATA_WIDTH, in 2^SIZE bytes, otherwise narrow bursts are used
@@ -275,12 +274,10 @@
 	assign M_AXI_AWVALID	= axi_awvalid;
 	//Write Data(W)
 	// assign M_AXI_WDATA	= axi_wdata;
-	// assign M_AXI_WDATA	= output_fifo_read_data;
-	assign M_AXI_WDATA	= 128'hAAAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEEEEEEEEFFFFFFFF00000000011111111AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEEEEEEEEFFFFFFFF00000000011111111; // alljiang debug
+	assign M_AXI_WDATA	= output_fifo_read_data;
 	//All bursts are complete and aligned in this example
 	assign M_AXI_WSTRB	= {(C_M_AXI_DATA_WIDTH/8){1'b1}};
-	// assign M_AXI_WLAST	= axi_wlast;
-	assign M_AXI_WLAST	= axi_wlast;    // alljiang debug
+	assign M_AXI_WLAST	= axi_wlast;
 	assign M_AXI_WUSER	= 'b0;
 	assign M_AXI_WVALID	= axi_wvalid;
 	//Write Response (B)

@@ -311,7 +311,6 @@ main(int argc, char *argv[]) {
 	while (!(aes_regs[1] & 0b10)) {}
 
 	for (int i = 0; i < 128/8; i++) {
-        ocm_regs[i] = 0;
         printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
     }
 
