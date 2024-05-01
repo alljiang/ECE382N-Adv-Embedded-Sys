@@ -278,6 +278,10 @@ main(int argc, char *argv[]) {
         printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
     }
 
+	// time calculation code
+	clock_t start_time; 
+    start_time = clock();
+
     // in hex
     char aes_key[] = "00112233445566778899AABBCCDDEEFF";
 
@@ -309,6 +313,13 @@ main(int argc, char *argv[]) {
 
 	// wait until aes done
 	while (!(aes_regs[1] & 0b10)) {}
+
+	// record end time of AES
+	clock_t time_taken_t; 
+	time_taken_t = clock() - start_time; 
+	double time_taken = ((double)time_taken_t)/CLOCKS_PER_SEC; // in seconds
+
+	printf("AES took: %f seconds to complete \n", time_taken); 
 
 	for (int i = 0; i < 128/8; i++) {
         printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
