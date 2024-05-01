@@ -800,7 +800,7 @@
     reg [15:0] my_count;
     reg wlast_set;
     assign debug_master[63:32] = set_addr;
-    assign debug_master[31:0] = {14'b0, burst_write_active, writes_done, my_count};
+    assign debug_master[31:0] = {13'b0, wlast_set, burst_write_active, writes_done, my_count};
 
     always @(posedge M_AXI_ACLK) begin
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
