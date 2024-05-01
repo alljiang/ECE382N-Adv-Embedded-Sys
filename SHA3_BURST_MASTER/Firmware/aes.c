@@ -22,6 +22,14 @@ uint32_t *timer_regs;
 uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
 
+// macros for buffer sizes 
+#define PLAIN_TEXT_BUFFER 130
+#define KEY_BUFFER 258
+#define IV_BUFFER 130
+#define OUT_FILE_NAME_BUFFER 20
+#define IV_BUFFER_LOW 65
+#define IV_BUFFER_UP 65
+
 #define ADDRESS_OCM 0xFFFC0000
 #define ADDRESS_AES_SLAVE 0xB0000000
 #define ADDRESS_CAPTURE_TIMER_SLAVE 0xB0002000
@@ -311,6 +319,37 @@ set_aes_iv(uint64_t iv_upper_half, uint64_t iv_lower_half) {
 	aes_regs[14] = iv_lower_half & 0xFFFFFFFF;
 }
 
+uint64_t 
+string_to_int64(const char *str) {
+    uint64_t result = 0;
+    int len = strlen(str);
+    bool negative = false;
+    int i = 0;
+
+    // Check for negative sign
+    if (str[0] == '-') {
+        negative = true;
+        i = 1;
+    }
+
+    for (; i < len; ++i) {
+        if (str[i] >= '0' && str[i] <= '9') {
+            result = result * 10 + (str[i] - '0');
+        } else {
+            // Handle error if the string contains non-digit characters
+            printf("Error: Non-digit character detected in string\n");
+            exit(1);
+        }
+    }
+
+    // Convert to negative if necessary
+    if (negative) {
+        result = -result;
+    }
+
+    return result;
+}
+
 void
 run_accelerator() {
 	// reset
@@ -345,23 +384,59 @@ main(int argc, char *argv[]) {
     to make automated testing for various plaintexts, keys, and IVs
     */
 
+   	if (argc != 5)
+    {
+        printf("Usage: ./%s plaintext key(hex) IV(128 bit value) output_file.txt\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+	char plainText[PLAIN_TEXT_BUFFER], key[KEY_BUFFER], IV[IV_BUFFER], OutputFileName[OUT_FILE_NAME_BUFFER];
+	strcpy(plainText, argv[2]); // copying argv 2 to plaintext
+	strcpy(key, argv[3]); // copying argv 3 to key
+	strcpy(IV, argv[4]); // copying argv 4 to IV
+	strcpy(OutputFileName, argv[5]);
+
+	// file pointer
+   	FILE *outputfile = fopen(OutputFileName, "a");
+
+	printf("Assigned value: Plain text: %s\nKey: %s\nInitial Value: %s\n", plainText, key, IV);
+	// return 0;
+	int bytes; 
+	for (bytes = 0; plainText[bytes] != '\0'; ++bytes);
+
     // pass in the plaintext as a string, second argument is the number of bytes to encrypt
     // all other bytes in the rest of the block are padded as 0s. 
     // we want to keep track of the num_blocks to print it out later
 	// int num_blocks = set_plaintext("abcdef", 7);
-	int num_blocks = set_plaintext("1234567812345678", 16);
+	// int num_blocks = set_plaintext("1234567812345678", 16);
+	int num_blocks = set_plaintext(plainText, (bytes + 1));
 
 	// time calculation code
 	clock_t start_time;
 	start_time = clock();
 
 	// in hex
+	// set_aes_key(
+	//     "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF",
+	//     AES_KEY_SIZE_256);
 	set_aes_key(
-	    "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF",
-	    AES_KEY_SIZE_256);
+	    key,
+	    AES_KEY_SIZE_256); // data received from command line arguments
 
 	// set my 128-bit IV. This is passed in as 2 64-bit ints
-	set_aes_iv(0, 0);
+	// set_aes_iv(0, 0);
+	char IV_LOW[IV_BUFFER_LOW], IV_UP[IV_BUFFER_UP]; 
+	for (int i = 0; IV[i] != '\0'; ++i) // splitting the 128 bit string value into 2 64 bit value
+	{
+		if (i <= 63)
+		{
+			IV_LOW[i] = IV[i];
+		}
+		else if (i <= 127)
+		{
+			IV_UP[i] = IV[i];
+		}
+	}
+	set_aes_iv(string_to_int64(IV_UP), string_to_int64(IV_LOW));
 
 	run_accelerator();
 
@@ -374,9 +449,10 @@ main(int argc, char *argv[]) {
 
 	for (int i = 0; i < num_blocks * 4; i++) {
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
+		fwrite(&ocm_regs[i], sizeof(uint32_t), 1,outputfile); // writing the cipher text to a text file 
 	}
 
     // TODO: output the encrypted data to a file path specified as a command line argument
-
+	fclose(outputfile);
 	unmap_regs();
 }
