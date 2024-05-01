@@ -240,7 +240,7 @@ initialize_stuff() {
 	}
 
 	set_clock(PS_CLK_1499_MHZ, PL_CLK_300_MHZ);
-	setup_capture_timer_interrupt();
+	// setup_capture_timer_interrupt();
 
 	return 0;
 }
@@ -329,23 +329,36 @@ int
 main(int argc, char *argv[]) {
 	int rv;
 
+
 	rv = initialize_stuff();
 	if (rv != 0)
 		return rv;
 
-	// set_plaintext("abcdefghijklmnop", 1);
-	// set_plaintext("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1);
-	int num_blocks = set_plaintext("\1\2\3\4\5", 5);
+    /*
+    TODO
+    use the command line arguments to pass in:
+    - the plaintext (either directly or as a file)
+    - the key (and the key size - this can be implied based on the length of the key)
+    - the IV
+    - output file
+
+    After making this into a command line program, write a python wrapper around it
+    to make automated testing for various plaintexts, keys, and IVs
+    */
+
+    // pass in the plaintext as a string, second argument is the number of bytes to encrypt
+    // all other bytes in the rest of the block are padded as 0s. 
+    // we want to keep track of the num_blocks to print it out later
+	int num_blocks = set_plaintext("abcdef", 7);
 
 	// time calculation code
 	clock_t start_time;
 	start_time = clock();
 
 	// in hex
-	char aes_key_hex_str[] = "00112233445566778899AABBCCDDEEFF";
-	set_aes_key(aes_key_hex_str, AES_KEY_SIZE_128);
+	set_aes_key("00112233445566778899AABBCCDDEEFF", AES_KEY_SIZE_128);
 
-	// set my 128-bit IV
+	// set my 128-bit IV. This is passed in as 2 64-bit ints
 	set_aes_iv(0, 0);
 
 	run_accelerator();
