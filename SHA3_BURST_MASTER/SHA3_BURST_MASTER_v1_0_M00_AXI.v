@@ -798,6 +798,7 @@
     reg [31:0] set_addr;
     reg [31:0] set_val;
     reg [15:0] my_count;
+    reg wlast_set;
     assign debug_master[63:32] = set_addr;
     assign debug_master[31:0] = {14'b0, burst_write_active, writes_done, my_count};
 
@@ -805,6 +806,7 @@
         if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
             set_addr <= 32'hABCDEFFF;
             set_val <= 32'hFFFEDCBA;
+            wlast_set <= 0;
         end 
         else begin
 
@@ -814,6 +816,7 @@
 
             if (M_AXI_WREADY & M_AXI_WVALID) begin
                 set_val <= M_AXI_WDATA[127:96];
+                wlast_set <= axi_wlast;
             end
 
         end
