@@ -274,7 +274,11 @@
 	assign M_AXI_AWVALID	= axi_awvalid;
 	//Write Data(W)
 	// assign M_AXI_WDATA	= axi_wdata;
-	assign M_AXI_WDATA	= output_fifo_read_data;
+	// assign M_AXI_WDATA	= output_fifo_read_data;
+	assign M_AXI_WDATA	= {output_fifo_read_data[31:0], 
+                            output_fifo_read_data[63:32], 
+                            output_fifo_read_data[95:64], 
+                            output_fifo_read_data[127:96]};
 	//All bursts are complete and aligned in this example
 	assign M_AXI_WSTRB	= {(C_M_AXI_DATA_WIDTH/8){1'b1}};
 	assign M_AXI_WLAST	= axi_wlast;
