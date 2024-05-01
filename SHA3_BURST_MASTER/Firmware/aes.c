@@ -245,23 +245,33 @@ initialize_stuff() {
 	return 0;
 }
 
-void
-set_plaintext(char *data, int32_t num_blocks) {
+// returns number of blocks
+int
+set_plaintext(char *data, int32_t num_bytes) {
+    int32_t byte_index = 0;
+    int num_blocks = num_bytes >> 4;
+    if (num_blocks << 4 < num_bytes) {
+        num_blocks++;
+    }
+
 	// each block is 128 bits (16 bytes)
 	for (int i = 0; i < 4 * num_blocks; i++) {
-		uint32_t full_byte = 0;
+		uint32_t full_word = 0;
 		for (int j = 0; j < 4; j++) {
-			if (i == 0)
-				full_byte = (full_byte << 8) | data[i * 4 + j];
-			else
-				full_byte = (full_byte << 8) | 0xFF;
+            if (byte_index++ < num_bytes) {
+				full_word = (full_word << 8) | data[i * 4 + j];
+			} else {
+                full_word = (full_word << 8) | 0;
+            }
 		}
-		ocm_regs[i] = full_byte;
+		ocm_regs[i] = full_word;
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 	}
 
 	// set number_blocks
 	aes_regs[2] = num_blocks;
+
+    return num_blocks;
 }
 
 void
@@ -324,7 +334,8 @@ main(int argc, char *argv[]) {
 		return rv;
 
 	// set_plaintext("abcdefghijklmnop", 1);
-	set_plaintext("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1);
+	// set_plaintext("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1);
+	int num_blocks = set_plaintext("\1\2\3\4\5", 5);
 
 	// time calculation code
 	clock_t start_time;
@@ -346,7 +357,7 @@ main(int argc, char *argv[]) {
 
 	printf("AES took: %f seconds to complete \n", time_taken);
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < num_blocks * 4; i++) {
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 	}
 
