@@ -1,4 +1,5 @@
 
+#include <ctype.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <math.h>
@@ -24,8 +25,8 @@ uint32_t *pl_clk_reg;
 
 // macros for buffer sizes
 #define PLAIN_TEXT_BUFFER 130  // this is supposed to be a file
-#define KEY_BUFFER 32
-#define IV_BUFFER 16
+#define KEY_BUFFER (64 + 1)
+#define IV_BUFFER (32 + 1)
 #define OUT_FILE_NAME_BUFFER 50
 #define MAX_FILE_STRING_BUFFER_SIZE 12
 
@@ -236,8 +237,8 @@ set_clock(enum PS_clock_frequency ps_clk, enum PL_clock_frequency pl_clk) {
 // string to hex
 int
 s_to_h(char *str) {
-	int lh = str[0] <= '9' ? str[0] - '0' : str[0] - 'A' + 10;
-	int rh = str[1] <= '9' ? str[1] - '0' : str[1] - 'A' + 10;
+	int lh = str[0] <= '9' ? str[0] - '0' : toupper(str[0]) - 'A' + 10;
+	int rh = str[1] <= '9' ? str[1] - '0' : toupper(str[1]) - 'A' + 10;
 	return lh * 16 + rh;
 }
 
@@ -316,7 +317,7 @@ set_aes_key(char *key_in_hex, enum AES_KEY_SIZE key_size) {
 
 void
 set_aes_iv(uint64_t iv_upper_half, uint64_t iv_lower_half) {
-    printf("%x, %x\n", iv_upper_half, iv_lower_half); //debug
+	printf("%lx, %lx\n", iv_upper_half, iv_lower_half);  // debug
 	aes_regs[11] = iv_upper_half >> 32;
 	aes_regs[12] = iv_upper_half & 0xFFFFFFFF;
 	aes_regs[13] = iv_lower_half >> 32;
@@ -367,13 +368,31 @@ main(int argc, char *argv[]) {
 	    OutputFileName[OUT_FILE_NAME_BUFFER];
 	strcpy(plainText, argv[1]);  // copying argv 2 to plaintext
 	strcpy(key, argv[2]);        // copying argv 3 to key
-	strcpy(IV, argv[3]);         // copying argv 4 to IV
 	strcpy(OutputFileName, argv[4]);
 
-    memset(IV, '0', 16);
-    memcpy(IV, argv[3], 16 - strlen(argv[3]));
+	if (strlen(argv[3]) > 32) {
+		printf("Error: IV too long");
+	}
 
-    printf("%s, %s\n", IV, argv[3]); //debug
+	memset(IV, '0', 32);
+	memcpy(&IV[32 - strlen(argv[3])], argv[3], strlen(argv[3]));
+	IV[32] = 0;
+
+	enum AES_KEY_SIZE aes_key_size;
+	switch (strlen(key)) {
+	case 32:
+		aes_key_size = AES_KEY_SIZE_128;
+		break;
+	case 48:
+		aes_key_size = AES_KEY_SIZE_192;
+		break;
+	case 64:
+		aes_key_size = AES_KEY_SIZE_256;
+		break;
+	default:
+		printf("Error: Invalid key length\n");
+		return EXIT_FAILURE;
+	}
 
 	// file pointer
 	FILE *outputfile = fopen(OutputFileName, "w");
@@ -398,16 +417,15 @@ main(int argc, char *argv[]) {
 	start_time = clock();
 
 	// in hex
-	set_aes_key(key,
-	            AES_KEY_SIZE_256);  // data received from command line arguments
+	set_aes_key(key, aes_key_size);
 
 	// set my 128-bit IV. This is passed in as 2 64-bit ints
-    uint64_t iv_high = 0;
-    uint64_t iv_low = 0;
-    for (int i = 0; i < 8; i++) {
-        iv_high = (iv_high << 8) | IV[i];
-        iv_low = (iv_low << 8) | IV[i + 8];
-    }
+	uint64_t iv_high = 0;
+	uint64_t iv_low  = 0;
+	for (int i = 0; i < 16; i += 2) {
+		iv_high = (iv_high << 8) | s_to_h(&IV[i]);
+		iv_low  = (iv_low << 8) | s_to_h(&IV[i + 16]);
+	}
 	set_aes_iv(iv_low, iv_high);
 
 	run_accelerator();
@@ -425,12 +443,12 @@ main(int argc, char *argv[]) {
 	strcpy(fileStringBuffer, "");      // empty the array before use
 
 	for (int i = 0; i < num_blocks * 4; i++) {
-		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
+		// printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
 		sprintf(fileStringBufferTemp,
 		        "%x",
 		        ocm_regs[i]);  // writing ocm data to filestringbuffer
 		strcat(fileStringBuffer, fileStringBufferTemp);
-		printf("File: %s\n", fileStringBuffer);
+		// printf("File: %s\n", fileStringBuffer);
 	}
 	fputs(fileStringBuffer, outputfile);
 	// TODO: output the encrypted data to a file path specified as a command
