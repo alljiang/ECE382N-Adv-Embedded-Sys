@@ -24,10 +24,8 @@ uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
 
 // macros for buffer sizes
-#define PLAIN_TEXT_BUFFER 130  // this is supposed to be a file
 #define KEY_BUFFER (64 + 1)
 #define IV_BUFFER (32 + 1)
-#define OUT_FILE_NAME_BUFFER 50
 #define MAX_FILE_STRING_BUFFER_SIZE 12
 
 #define ADDRESS_OCM 0xFFFC0000
@@ -317,7 +315,6 @@ set_aes_key(char *key_in_hex, enum AES_KEY_SIZE key_size) {
 
 void
 set_aes_iv(uint64_t iv_upper_half, uint64_t iv_lower_half) {
-	printf("%lx, %lx\n", iv_upper_half, iv_lower_half);  // debug
 	aes_regs[11] = iv_upper_half >> 32;
 	aes_regs[12] = iv_upper_half & 0xFFFFFFFF;
 	aes_regs[13] = iv_lower_half >> 32;
@@ -345,30 +342,31 @@ main(int argc, char *argv[]) {
 	if (rv != 0)
 		return rv;
 
-	/*
-	TODO
-	use the command line arguments to pass in:
-	- the plaintext as a file
-	- the key (and the key size - this can be implied based on the length of the
-	key)
-	- the IV
-	- output file
-
-	After making this into a command line program, write a python wrapper around
-	it to make automated testing for various plaintexts, keys, and IVs
-	*/
-
 	if (argc != 5) {
 		printf(
-		    "Usage: %s plaintext key(hex) IV(128 bit value) output_file.txt\n",
+		    "Usage: %s plaintext_file_path key_in_hex IV_in_hex ciphertext_output_file_path\n",
 		    argv[0]);
 		return EXIT_FAILURE;
 	}
-	char plainText[PLAIN_TEXT_BUFFER], key[KEY_BUFFER], IV[IV_BUFFER],
-	    OutputFileName[OUT_FILE_NAME_BUFFER];
-	strcpy(plainText, argv[1]);  // copying argv 2 to plaintext
-	strcpy(key, argv[2]);        // copying argv 3 to key
-	strcpy(OutputFileName, argv[4]);
+	char key[KEY_BUFFER], IV[IV_BUFFER];
+    
+	char *plaintext_string;
+	uint16_t plaintext_string_length;
+    
+    // read in plaintext
+	FILE *file = fopen(argv[1], "r");
+	if (file == NULL) {
+        printf("Error opening file\n");
+        return 1;
+    }
+
+    fseek(file, 0, SEEK_END);
+	plaintext_string_length = ftell(file);
+
+	plaintext_string = malloc(plaintext_string_length);
+	fseek(file, 0, SEEK_SET);
+	fread(plaintext_string, 1, plaintext_string_length, file);
+	fclose(file);
 
 	if (strlen(argv[3]) > 32) {
 		printf("Error: IV too long");
@@ -379,7 +377,7 @@ main(int argc, char *argv[]) {
 	IV[32] = 0;
 
 	enum AES_KEY_SIZE aes_key_size;
-	switch (strlen(key)) {
+	switch (strlen(argv[2])) {
 	case 32:
 		aes_key_size = AES_KEY_SIZE_128;
 		break;
@@ -395,29 +393,19 @@ main(int argc, char *argv[]) {
 	}
 
 	// file pointer
-	FILE *outputfile = fopen(OutputFileName, "w");
-
-	printf("Assigned value: Plain text: %s\nKey: %s\nInitial Value: %s\n",
-	       plainText,
-	       key,
-	       IV);
-	// return 0;
-	int bytes;
-	for (bytes = 0; plainText[bytes] != '\0'; ++bytes) {}
+	FILE *outputfile = fopen(argv[4], "w");
 
 	// pass in the plaintext as a string, second argument is the number of bytes
 	// to encrypt all other bytes in the rest of the block are padded as 0s. we
 	// want to keep track of the num_blocks to print it out later int num_blocks
-	// = set_plaintext("abcdef", 7); int num_blocks =
-	// set_plaintext("1234567812345678", 16);
-	int num_blocks = set_plaintext(plainText, (bytes));
+	int num_blocks = set_plaintext(plaintext_string, strlen(plaintext_string));
 
 	// time calculation code
 	clock_t start_time;
 	start_time = clock();
 
 	// in hex
-	set_aes_key(key, aes_key_size);
+	set_aes_key(argv[2], aes_key_size);
 
 	// set my 128-bit IV. This is passed in as 2 64-bit ints
 	uint64_t iv_high = 0;
@@ -438,7 +426,7 @@ main(int argc, char *argv[]) {
 	printf("AES took: %.02f Microseconds to complete \n", time_taken * 1000000);
 
 	char fileStringBuffer[MAX_FILE_STRING_BUFFER_SIZE],
-	    fileStringBufferTemp[MAX_FILE_STRING_BUFFER_SIZE * (bytes / 4)];
+	    fileStringBufferTemp[MAX_FILE_STRING_BUFFER_SIZE * (strlen(plaintext_string) / 4)];
 	strcpy(fileStringBufferTemp, "");  // empty the array before use
 	strcpy(fileStringBuffer, "");      // empty the array before use
 
@@ -451,8 +439,8 @@ main(int argc, char *argv[]) {
 		// printf("File: %s\n", fileStringBuffer);
 	}
 	fputs(fileStringBuffer, outputfile);
-	// TODO: output the encrypted data to a file path specified as a command
-	// line argument
 	fclose(outputfile);
+
+    free(plaintext_string);
 	unmap_regs();
 }
