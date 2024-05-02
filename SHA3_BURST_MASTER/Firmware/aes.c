@@ -25,10 +25,8 @@ uint32_t *pl_clk_reg;
 // macros for buffer sizes 
 #define PLAIN_TEXT_BUFFER 130
 #define KEY_BUFFER 258
-#define IV_BUFFER 130
+#define IV_BUFFER 128
 #define OUT_FILE_NAME_BUFFER 50
-#define IV_BUFFER_LOW 65
-#define IV_BUFFER_UP 65
 #define MAX_FILE_STRING_BUFFER_SIZE 12
 
 #define ADDRESS_OCM 0xFFFC0000
@@ -320,37 +318,6 @@ set_aes_iv(uint64_t iv_upper_half, uint64_t iv_lower_half) {
 	aes_regs[14] = iv_lower_half & 0xFFFFFFFF;
 }
 
-uint64_t 
-string_to_int64(const char *str) {
-    uint64_t result = 0;
-    int len = strlen(str);
-    bool negative = false;
-    int i = 0;
-
-    // Check for negative sign
-    if (str[0] == '-') {
-        negative = true;
-        i = 1;
-    }
-
-    for (; i < len; ++i) {
-        if (str[i] >= '0' && str[i] <= '9') {
-            result = result * 10 + (str[i] - '0');
-        } else {
-            // Handle error if the string contains non-digit characters
-            printf("Error: Non-digit character detected in string\n");
-            exit(1);
-        }
-    }
-
-    // Convert to negative if necessary
-    if (negative) {
-        result = -result;
-    }
-
-    return result;
-}
-
 void
 run_accelerator() {
 	// reset
@@ -387,7 +354,7 @@ main(int argc, char *argv[]) {
 
    	if (argc != 5)
     {
-        printf("Usage: ./%s plaintext key(hex) IV(128 bit value) output_file.txt\n", argv[0]);
+        printf("Usage: %s plaintext key(hex) IV(128 bit value) output_file.txt\n", argv[0]);
         return EXIT_FAILURE;
     }
 	char plainText[PLAIN_TEXT_BUFFER], key[KEY_BUFFER], IV[IV_BUFFER], OutputFileName[OUT_FILE_NAME_BUFFER];
