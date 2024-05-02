@@ -22,10 +22,10 @@ uint32_t *timer_regs;
 uint32_t *ps_clk_reg;
 uint32_t *pl_clk_reg;
 
-// macros for buffer sizes 
-#define PLAIN_TEXT_BUFFER 130
-#define KEY_BUFFER 258
-#define IV_BUFFER 128
+// macros for buffer sizes
+#define PLAIN_TEXT_BUFFER 130  // this is supposed to be a file
+#define KEY_BUFFER 32
+#define IV_BUFFER 16
 #define OUT_FILE_NAME_BUFFER 50
 #define MAX_FILE_STRING_BUFFER_SIZE 12
 
@@ -93,8 +93,12 @@ map_regs() {
 	if (dh == -1)
 		return -1;
 
-	ocm_regs =
-	    mmap(NULL, 16*1024*1024, PROT_READ | PROT_WRITE, MAP_SHARED, dh, ADDRESS_OCM);
+	ocm_regs = mmap(NULL,
+	                16 * 1024 * 1024,
+	                PROT_READ | PROT_WRITE,
+	                MAP_SHARED,
+	                dh,
+	                ADDRESS_OCM);
 
 	timer_regs = mmap(NULL,
 	                  32,
@@ -255,21 +259,21 @@ initialize_stuff() {
 // returns number of blocks
 int
 set_plaintext(char *data, int32_t num_bytes) {
-    int32_t byte_index = 0;
-    int num_blocks = num_bytes >> 4;
-    if (num_blocks << 4 < num_bytes) {
-        num_blocks++;
-    }
+	int32_t byte_index = 0;
+	int num_blocks     = num_bytes >> 4;
+	if (num_blocks << 4 < num_bytes) {
+		num_blocks++;
+	}
 
 	// each block is 128 bits (16 bytes)
 	for (int i = 0; i < 4 * num_blocks; i++) {
 		uint32_t full_word = 0;
 		for (int j = 0; j < 4; j++) {
-            if (byte_index++ < num_bytes) {
+			if (byte_index++ < num_bytes) {
 				full_word = (full_word << 8) | data[i * 4 + j];
 			} else {
-                full_word = (full_word << 8) | 0;
-            }
+				full_word = (full_word << 8) | 0;
+			}
 		}
 		ocm_regs[i] = full_word;
 	}
@@ -277,7 +281,7 @@ set_plaintext(char *data, int32_t num_bytes) {
 	// set number_blocks
 	aes_regs[2] = num_blocks;
 
-    return num_blocks;
+	return num_blocks;
 }
 
 void
@@ -312,6 +316,7 @@ set_aes_key(char *key_in_hex, enum AES_KEY_SIZE key_size) {
 
 void
 set_aes_iv(uint64_t iv_upper_half, uint64_t iv_lower_half) {
+    printf("%x, %x\n", iv_upper_half, iv_lower_half); //debug
 	aes_regs[11] = iv_upper_half >> 32;
 	aes_regs[12] = iv_upper_half & 0xFFFFFFFF;
 	aes_regs[13] = iv_lower_half >> 32;
@@ -335,47 +340,57 @@ int
 main(int argc, char *argv[]) {
 	int rv;
 
-
 	rv = initialize_stuff();
 	if (rv != 0)
 		return rv;
 
-    /*
-    TODO
-    use the command line arguments to pass in:
-    - the plaintext as a file
-    - the key (and the key size - this can be implied based on the length of the key)
-    - the IV
-    - output file
+	/*
+	TODO
+	use the command line arguments to pass in:
+	- the plaintext as a file
+	- the key (and the key size - this can be implied based on the length of the
+	key)
+	- the IV
+	- output file
 
-    After making this into a command line program, write a python wrapper around it
-    to make automated testing for various plaintexts, keys, and IVs
-    */
+	After making this into a command line program, write a python wrapper around
+	it to make automated testing for various plaintexts, keys, and IVs
+	*/
 
-   	if (argc != 5)
-    {
-        printf("Usage: %s plaintext key(hex) IV(128 bit value) output_file.txt\n", argv[0]);
-        return EXIT_FAILURE;
-    }
-	char plainText[PLAIN_TEXT_BUFFER], key[KEY_BUFFER], IV[IV_BUFFER], OutputFileName[OUT_FILE_NAME_BUFFER];
-	strcpy(plainText, argv[1]); // copying argv 2 to plaintext
-	strcpy(key, argv[2]); // copying argv 3 to key
-	strcpy(IV, argv[3]); // copying argv 4 to IV
+	if (argc != 5) {
+		printf(
+		    "Usage: %s plaintext key(hex) IV(128 bit value) output_file.txt\n",
+		    argv[0]);
+		return EXIT_FAILURE;
+	}
+	char plainText[PLAIN_TEXT_BUFFER], key[KEY_BUFFER], IV[IV_BUFFER],
+	    OutputFileName[OUT_FILE_NAME_BUFFER];
+	strcpy(plainText, argv[1]);  // copying argv 2 to plaintext
+	strcpy(key, argv[2]);        // copying argv 3 to key
+	strcpy(IV, argv[3]);         // copying argv 4 to IV
 	strcpy(OutputFileName, argv[4]);
 
+    memset(IV, '0', 16);
+    memcpy(IV, argv[3], 16 - strlen(argv[3]));
+
+    printf("%s, %s\n", IV, argv[3]); //debug
+
 	// file pointer
-   	FILE *outputfile = fopen(OutputFileName, "w");
+	FILE *outputfile = fopen(OutputFileName, "w");
 
-	printf("Assigned value: Plain text: %s\nKey: %s\nInitial Value: %s\n", plainText, key, IV);
+	printf("Assigned value: Plain text: %s\nKey: %s\nInitial Value: %s\n",
+	       plainText,
+	       key,
+	       IV);
 	// return 0;
-	int bytes; 
-	for (bytes = 0; plainText[bytes] != '\0'; ++bytes);
+	int bytes;
+	for (bytes = 0; plainText[bytes] != '\0'; ++bytes) {}
 
-    // pass in the plaintext as a string, second argument is the number of bytes to encrypt
-    // all other bytes in the rest of the block are padded as 0s. 
-    // we want to keep track of the num_blocks to print it out later
-	// int num_blocks = set_plaintext("abcdef", 7);
-	// int num_blocks = set_plaintext("1234567812345678", 16);
+	// pass in the plaintext as a string, second argument is the number of bytes
+	// to encrypt all other bytes in the rest of the block are padded as 0s. we
+	// want to keep track of the num_blocks to print it out later int num_blocks
+	// = set_plaintext("abcdef", 7); int num_blocks =
+	// set_plaintext("1234567812345678", 16);
 	int num_blocks = set_plaintext(plainText, (bytes));
 
 	// time calculation code
@@ -383,50 +398,43 @@ main(int argc, char *argv[]) {
 	start_time = clock();
 
 	// in hex
-	// set_aes_key(
-	//     "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF",
-	//     AES_KEY_SIZE_256);
-	set_aes_key(
-	    key,
-	    AES_KEY_SIZE_256); // data received from command line arguments
+	set_aes_key(key,
+	            AES_KEY_SIZE_256);  // data received from command line arguments
 
 	// set my 128-bit IV. This is passed in as 2 64-bit ints
-	// set_aes_iv(0, 0);
-	char IV_LOW[IV_BUFFER_LOW], IV_UP[IV_BUFFER_UP]; 
-	for (int i = 0; IV[i] != '\0'; ++i) // splitting the 128 bit string value into 2 64 bit value
-	{
-		if (i <= 63)
-		{
-			IV_LOW[i] = IV[i];
-		}
-		else if (i <= 127)
-		{
-			IV_UP[i] = IV[i];
-		}
-	}
-	set_aes_iv(string_to_int64(IV_UP), string_to_int64(IV_LOW));
+    uint64_t iv_high = 0;
+    uint64_t iv_low = 0;
+    for (int i = 0; i < 8; i++) {
+        iv_high = (iv_high << 8) | IV[i];
+        iv_low = (iv_low << 8) | IV[i + 8];
+    }
+	set_aes_iv(iv_low, iv_high);
 
 	run_accelerator();
 
-    // record end time of AES
-    clock_t time_taken_t;
+	// record end time of AES
+	clock_t time_taken_t;
 	time_taken_t      = clock() - start_time;
 	double time_taken = ((double) time_taken_t) / CLOCKS_PER_SEC;  // in seconds
 
 	printf("AES took: %.02f Microseconds to complete \n", time_taken * 1000000);
-	
-	char fileStringBuffer[MAX_FILE_STRING_BUFFER_SIZE], fileStringBufferTemp[MAX_FILE_STRING_BUFFER_SIZE * (bytes/4)];
-	strcpy(fileStringBufferTemp,""); // empty the array before use
-	strcpy(fileStringBuffer,""); // empty the array before use
-	
+
+	char fileStringBuffer[MAX_FILE_STRING_BUFFER_SIZE],
+	    fileStringBufferTemp[MAX_FILE_STRING_BUFFER_SIZE * (bytes / 4)];
+	strcpy(fileStringBufferTemp, "");  // empty the array before use
+	strcpy(fileStringBuffer, "");      // empty the array before use
+
 	for (int i = 0; i < num_blocks * 4; i++) {
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
-		sprintf(fileStringBufferTemp, "%x" , ocm_regs[i]); // writing ocm data to filestringbuffer
+		sprintf(fileStringBufferTemp,
+		        "%x",
+		        ocm_regs[i]);  // writing ocm data to filestringbuffer
 		strcat(fileStringBuffer, fileStringBufferTemp);
 		printf("File: %s\n", fileStringBuffer);
 	}
 	fputs(fileStringBuffer, outputfile);
-    // TODO: output the encrypted data to a file path specified as a command line argument
+	// TODO: output the encrypted data to a file path specified as a command
+	// line argument
 	fclose(outputfile);
 	unmap_regs();
 }
