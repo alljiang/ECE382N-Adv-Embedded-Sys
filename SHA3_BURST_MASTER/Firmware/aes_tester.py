@@ -7,6 +7,12 @@ from Crypto.Random import get_random_bytes
 import random 
 import pyaes, pbkdf2, binascii, os, secrets
 
+class UnitTestConfig:
+    def __init__(self, plaintext, key, iv):
+        self.plaintext = plaintext
+        self.key = key
+        self.iv = iv
+
 # Function to call the C program with given arguments
 def call_c_program(plaintext, key, iv):
     # args = ['./aes', plaintext, ' ', key, ' ', iv, ' output.txt']  # Modify './aes_ctr_encrypt' to your C program's executable name
