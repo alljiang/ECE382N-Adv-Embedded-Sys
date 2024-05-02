@@ -26,9 +26,10 @@ uint32_t *pl_clk_reg;
 #define PLAIN_TEXT_BUFFER 130
 #define KEY_BUFFER 258
 #define IV_BUFFER 130
-#define OUT_FILE_NAME_BUFFER 20
+#define OUT_FILE_NAME_BUFFER 50
 #define IV_BUFFER_LOW 65
 #define IV_BUFFER_UP 65
+#define MAX_FILE_STRING_BUFFER_SIZE 12
 
 #define ADDRESS_OCM 0xFFFC0000
 #define ADDRESS_AES_SLAVE 0xB0000000
@@ -390,13 +391,13 @@ main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 	char plainText[PLAIN_TEXT_BUFFER], key[KEY_BUFFER], IV[IV_BUFFER], OutputFileName[OUT_FILE_NAME_BUFFER];
-	strcpy(plainText, argv[2]); // copying argv 2 to plaintext
-	strcpy(key, argv[3]); // copying argv 3 to key
-	strcpy(IV, argv[4]); // copying argv 4 to IV
-	strcpy(OutputFileName, argv[5]);
+	strcpy(plainText, argv[1]); // copying argv 2 to plaintext
+	strcpy(key, argv[2]); // copying argv 3 to key
+	strcpy(IV, argv[3]); // copying argv 4 to IV
+	strcpy(OutputFileName, argv[4]);
 
 	// file pointer
-   	FILE *outputfile = fopen(OutputFileName, "a");
+   	FILE *outputfile = fopen(OutputFileName, "w");
 
 	printf("Assigned value: Plain text: %s\nKey: %s\nInitial Value: %s\n", plainText, key, IV);
 	// return 0;
@@ -408,7 +409,7 @@ main(int argc, char *argv[]) {
     // we want to keep track of the num_blocks to print it out later
 	// int num_blocks = set_plaintext("abcdef", 7);
 	// int num_blocks = set_plaintext("1234567812345678", 16);
-	int num_blocks = set_plaintext(plainText, (bytes + 1));
+	int num_blocks = set_plaintext(plainText, (bytes));
 
 	// time calculation code
 	clock_t start_time;
@@ -445,13 +446,19 @@ main(int argc, char *argv[]) {
 	time_taken_t      = clock() - start_time;
 	double time_taken = ((double) time_taken_t) / CLOCKS_PER_SEC;  // in seconds
 
-	printf("AES took: %.02f ns to complete \n", time_taken * 1000000);
-
+	printf("AES took: %.02f Microseconds to complete \n", time_taken * 1000000);
+	
+	char fileStringBuffer[MAX_FILE_STRING_BUFFER_SIZE], fileStringBufferTemp[MAX_FILE_STRING_BUFFER_SIZE * (bytes/4)];
+	strcpy(fileStringBufferTemp,""); // empty the array before use
+	strcpy(fileStringBuffer,""); // empty the array before use
+	
 	for (int i = 0; i < num_blocks * 4; i++) {
 		printf("ocm[%d] = 0x%08X\n", i, ocm_regs[i]);
-		fwrite(&ocm_regs[i], sizeof(uint32_t), 1,outputfile); // writing the cipher text to a text file 
+		sprintf(fileStringBufferTemp, "%x" , ocm_regs[i]); // writing ocm data to filestringbuffer
+		strcat(fileStringBuffer, fileStringBufferTemp);
+		printf("File: %s\n", fileStringBuffer);
 	}
-
+	fputs(fileStringBuffer, outputfile);
     // TODO: output the encrypted data to a file path specified as a command line argument
 	fclose(outputfile);
 	unmap_regs();
