@@ -18,16 +18,14 @@ class UnitTestConfig:
 
 def accelerator_test(config: UnitTestConfig) -> Tuple[str, int]:
     cmd = f'./aes inputs/{config.test_name} {config.key} {config.iv} outputs/{config.test_name}'
-    print(cmd)
-    start_time = time.time()
-    os.system('./aes inputs/' + config.test_name + ' ' + config.key + ' ' + config.iv + ' outputs/' + config.test_name)
-    end_time = time.time()
+    # print(cmd)
+    time_diff = os.popen(f'./aes inputs/{config.test_name} {config.key} {config.iv} outputs/{config.test_name}').read()
 
     # call(['./aes', 'inputs/' + config.test_name, config.key, config.iv, 'outputs/' + config.test_name])
 
     with open('outputs/' + config.test_name, 'rb') as file:
         ciphertext = file.read()
-        return (ciphertext.decode(), end_time - start_time)
+        return (ciphertext.decode(), float(time_diff))
 
 def aes_library_test(config: UnitTestConfig) -> Tuple[str, int]:
     start_time = time.time()
@@ -39,7 +37,7 @@ def aes_library_test(config: UnitTestConfig) -> Tuple[str, int]:
         ciphertext = aes.encrypt(plaintext)
         end_time = time.time()
 
-        return (binascii.hexlify(ciphertext).decode(), end_time - start_time)
+        return (binascii.hexlify(ciphertext).decode(), (end_time - start_time)*1000000)
 
 def generate_hex_string(length):
   hex_digits = "0123456789abcdef"
@@ -66,27 +64,30 @@ def generate_random_test_config(plaintext_length:int, key_size: int, test_name: 
     return UnitTestConfig(test_name, key, iv)
 
 def run_test_suite():
-    # all_tests = []
-    
-    my_test = UnitTestConfig('test.txt', '00000000000000000000000000000000', '00000000000000000000000000000001')
-    # my_test = generate_random_test_config(16, 128, 'test.txt')
-    # print(my_test.iv)
-    # print(my_test.key)
-    library_ciphertext, library_time = aes_library_test(my_test)
-    accelerator_ciphertext, accelerator_time = accelerator_test(my_test)
+    string_lengths = [10, 100, 1000, 10000, 16000]
+    key_sizes = [128, 192, 256]
+        
+    for strlen in string_lengths:
+        for keysize in key_sizes:
+            library_time_sum = 0
+            accelerator_time_sum = 0
 
-    print(library_ciphertext)
-    print(accelerator_ciphertext)
-    print(library_time, accelerator_time)
+            for i in range(0, 10):
+                my_test = generate_random_test_config(strlen, keysize, 'test.txt')
 
-    if (library_ciphertext == accelerator_ciphertext):
-        print("Test passed")
-    else:
-        print("Test failed")
+                library_ciphertext, library_time = aes_library_test(my_test)
+                accelerator_ciphertext, accelerator_time = accelerator_test(my_test)
 
+                library_time_sum += library_time
+                accelerator_time_sum += accelerator_time
 
-
-# clear tests directory
-
+                if (library_ciphertext != accelerator_ciphertext):
+                    print(f"Length: {strlen}, Keysize: {keysize}")
+                    print("Test failed")
+                    print(library_ciphertext)
+                    print(accelerator_ciphertext)
+                    exit()
+            
+            print(f"Length: {strlen}, Keysize: {keysize} | Library time: {library_time_sum/10} us, Accelerator time: {accelerator_time_sum/10} us")
 
 run_test_suite()

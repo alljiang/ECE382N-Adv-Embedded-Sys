@@ -350,9 +350,6 @@ int main(int argc, char *argv[]) {
   fread(plaintext_string, 1, plaintext_string_length, file);
   fclose(file);
 
-  plaintext_string_length = 8;
-  memset(plaintext_string, 0, 8);
-
   if (strlen(argv[3]) > 32) {
     printf("Error: IV too long");
   }
@@ -383,7 +380,7 @@ int main(int argc, char *argv[]) {
   // pass in the plaintext as a string, second argument is the number of bytes
   // to encrypt all other bytes in the rest of the block are padded as 0s. we
   // want to keep track of the num_blocks to print it out later int num_blocks
-  int num_blocks = set_plaintext(plaintext_string, strlen(plaintext_string));
+  int num_blocks = set_plaintext(plaintext_string, plaintext_string_length);
 
   // time calculation code
   clock_t start_time;
@@ -399,7 +396,7 @@ int main(int argc, char *argv[]) {
     iv_high = (iv_high << 8) | s_to_h(&IV[i]);
     iv_low = (iv_low << 8) | s_to_h(&IV[i + 16]);
   }
-  set_aes_iv(iv_low, iv_high);
+  set_aes_iv(iv_high, iv_low);
 
   run_accelerator();
 
@@ -408,20 +405,20 @@ int main(int argc, char *argv[]) {
   time_taken_t = clock() - start_time;
   double time_taken = ((double)time_taken_t) / CLOCKS_PER_SEC; // in seconds
 
-  //   printf("AES took: %.02f Microseconds to complete \n", time_taken *
-  //   1000000);
+  printf("%.02f\n", time_taken * 1000000);
 
   char buf[9];
   memset(buf, 0, sizeof(buf));
 
   int bytes_to_output = plaintext_string_length;
   for (int i = 0; bytes_to_output > 0; i++) {
-    int reg = ocm_regs[i];
+    uint32_t reg = ocm_regs[i];
     char format_str[] = "%08x";
+    // printf("ocm_regs[%d] = %08x\n", i, reg);
     if (bytes_to_output >= 4) {
       bytes_to_output -= 4;
     } else {
-      reg >>= (4 - bytes_to_output) * 8;
+      reg = reg >> (4 - bytes_to_output) * 8;
       format_str[2] = (bytes_to_output * 2) + '0';
       bytes_to_output = 0;
     }
