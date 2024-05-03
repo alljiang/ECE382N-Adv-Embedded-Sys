@@ -22,7 +22,7 @@ def accelerator_test(config: UnitTestConfig) -> str:
 
     with open('outputs/' + config.test_name, 'rb') as file:
         ciphertext = file.read()
-        return binascii.hexlify(ciphertext).decode()
+        return ciphertext.decode()
 
 def aes_library_test(config: UnitTestConfig):
     with open('inputs/' + config.test_name, 'rb') as file:
@@ -66,6 +66,9 @@ def run_test_suite():
     my_test = UnitTestConfig('test.txt', '12345678123456781234567812345678', '0')
     correct_ciphertext = aes_library_test(my_test)
     accelerator_ciphertext = accelerator_test(my_test)
+
+    print(correct_ciphertext)
+    print(accelerator_ciphertext)
 
     if (correct_ciphertext == accelerator_ciphertext):
         print("Test passed")
