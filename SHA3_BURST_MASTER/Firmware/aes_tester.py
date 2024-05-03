@@ -1,92 +1,80 @@
 from subprocess import call
 import os
 import binascii
-from Crypto.Cipher import AES
-from Crypto.Util import Counter
-from Crypto.Random import get_random_bytes
 import random 
-import pyaes, pbkdf2, binascii, os, secrets
+import pyaes, binascii, os
+from subprocess import call
 
 class UnitTestConfig:
-    def __init__(self, plaintext, key, iv):
-        self.plaintext = plaintext
+    def __init__(self, 
+                 test_name: str, 
+                 key: str, 
+                 iv: str):
+        self.test_name = test_name
         self.key = key
         self.iv = iv
 
-# Function to call the C program with given arguments
-def call_c_program(plaintext, key, iv):
-    # args = ['./aes', plaintext, ' ', key, ' ', iv, ' output.txt']  # Modify './aes_ctr_encrypt' to your C program's executable name
-    # subprocess.run(args)
-    call(['./aes', plaintext, key, iv, 'output.txt'])
+def accelerator_test(config: UnitTestConfig) -> str:
+    cmd = f'./aes inputs/{config.test_name} {config.key} {config.iv} outputs/{config.test_name}'
+    print(cmd)
+    os.system('./aes inputs/' + config.test_name + ' ' + config.key + ' ' + config.iv + ' outputs/' + config.test_name)
+    # call(['./aes', 'inputs/' + config.test_name, config.key, config.iv, 'outputs/' + config.test_name])
 
-# Function to read ciphertext from the output file
-def read_ciphertext_from_file():
-    with open('output.txt', 'rb') as file:
+    with open('outputs/' + config.test_name, 'rb') as file:
         ciphertext = file.read()
-    return ciphertext
+        return binascii.hexlify(ciphertext).decode()
 
-# Function to compute AES encryption in CTR mode using Python library
-def aes_ctr_encrypt_python(plaintext, key, iv):
-    # counter = Counter.new(128, initial_value=int(iv,16))
+def aes_library_test(config: UnitTestConfig):
+    with open('inputs/' + config.test_name, 'rb') as file:
+        plaintext = file.read()
     
-    # cipher = AES.new(key, AES.MODE_CTR, counter=counter)
-    # ciphertext = cipher.encrypt(plaintext)
-    # print("Encrypted: ", ciphertext)
-    # return ciphertext
-    iv = secrets.randbits(256)
-    # plaintext = "Text for encryption"
-    aes = pyaes.AESModeOfOperationCTR(key, pyaes.Counter(iv))
-    ciphertext = aes.encrypt(plaintext)
-    print("Encrypted data: ", ciphertext)
-    print('Encrypted:', binascii.hexlify(ciphertext).decode())
-    return binascii.hexlify(ciphertext).decode()
+        iv = int(config.iv, 16)
+        counter = pyaes.Counter(initial_value=int(config.iv, 16))
+        aes = pyaes.AESModeOfOperationCTR(
+            binascii.unhexlify(config.key), counter=counter)
+        ciphertext = aes.encrypt(plaintext)
 
-# Function to compare two ciphertexts
-def compare_ciphertexts(ciphertext1, ciphertext2):
-    if ciphertext1 == ciphertext2:
-        return True
+        return binascii.hexlify(ciphertext).decode()
+
+def generate_hex_string(length):
+  hex_digits = "0123456789abcdef"
+  result = ""
+  for i in range(length):
+    result += random.choice(hex_digits)
+  return result
+
+def generate_random_test_config(plaintext_length:int, key_size: int, test_name: str) -> UnitTestConfig:
+    key = None
+    if (key_size == 128):
+        key = generate_hex_string(32)
+    elif (key_size == 192):
+        key = generate_hex_string(48)
+    elif (key_size == 256):
+        key = generate_hex_string(64)
+
+    # generate random number between 0 and 2^128
+    iv = generate_hex_string(32)
+
+    with open('inputs/' + test_name, 'wb') as file:
+        file.write(os.urandom(plaintext_length))
+    
+    return UnitTestConfig(test_name, key, iv)
+
+def run_test_suite():
+    # all_tests = []
+    
+    my_test = UnitTestConfig('test.txt', '12345678123456781234567812345678', '0')
+    correct_ciphertext = aes_library_test(my_test)
+    accelerator_ciphertext = accelerator_test(my_test)
+
+    if (correct_ciphertext == accelerator_ciphertext):
+        print("Test passed")
     else:
-        return False
+        print("Test failed")
 
-# Main function to test AES encryption with random inputs
-def test_aes_ctr_encryption():
-    passing_tests = 0
-    failing_tests = 0
 
-    # Number of tests per byte length
-    num_tests_per_length = 5
 
-    for length in range(1, 17):  # Test plaintexts of length 1 to 16 bytes
-        print("Testing plaintext length: ", length)
-        for i in range(num_tests_per_length):
-            # Generate random plaintext, key, and IV
-            plaintext = "1234567812345678" #get_random_bytes(length)
-            key = "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF" #get_random_bytes(32)  # 256-bit key
-            # iv = get_random_bytes(16)   # 128-bit IV
-            iv =  "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" #"00000000" * 16
-            # print("IV: ", iv)
-            # Call C program to encrypt
-            # call_c_program(binascii.hexlify(plaintext).decode(), binascii.hexlify(key).decode(), binascii.hexlify(iv).decode())
-            # call_c_program(binascii.hexlify(plaintext).decode(), binascii.hexlify(key).decode(), binascii.hexlify(iv).decode())
-            call_c_program(plaintext, key, iv)
-            
-            # Read ciphertext from output file
-            ciphertext_c = read_ciphertext_from_file()
-            
-            # Compute ciphertext using Python library
-            ciphertext_python = aes_ctr_encrypt_python(plaintext, key, iv)
-            
-            # Compare ciphertexts
-            if compare_ciphertexts(ciphertext_c, ciphertext_python):
-                print("Test passed")
-                passing_tests += 1
-            else:
-                print("Test failed")
-                failing_tests += 1
+# clear tests directory
 
-    print("\nTest results:")
-    print("Passing tests: ", passing_tests)
-    print("Failing tests: ", failing_tests)
 
-# Call the main function to start testing
-test_aes_ctr_encryption()
+run_test_suite()
