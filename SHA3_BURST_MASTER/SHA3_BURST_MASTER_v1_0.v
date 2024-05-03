@@ -116,6 +116,7 @@
     wire [127:0] ocm_data_out;
     wire [63:0] debug_master;
     wire [127:0] output_fifo_read_data; 
+    wire aes_reset;
     
 	SHA3_BURST_MASTER_v1_0_S00_AXI # ( 
 		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
@@ -128,7 +129,7 @@
         .init_master_txn(init_master_txn),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
-        .aes_reset(aes_reset),
+        .aes_reset_out(aes_reset),
 
         .output_fifo_read_en(output_fifo_read_en),
         .output_fifo_read_data(output_fifo_read_data),
