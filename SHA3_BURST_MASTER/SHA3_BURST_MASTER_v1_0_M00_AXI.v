@@ -38,6 +38,7 @@
         input wire dfsm_read_ready,
         input wire [31:0] read_addr_index,
         output wire read_active,
+        input wire aes_reset,
 
         output reg output_fifo_read_en,
         input wire [127:0] output_fifo_read_data,
@@ -824,7 +825,7 @@
 
     // fifo writeback logic
     always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0) begin
+        if (M_AXI_ARESETN == 0 || aes_reset) begin
             output_fifo_read_en <= 1'b0;
             start_single_burst_write <= 1'b0;
             my_count <= 0;

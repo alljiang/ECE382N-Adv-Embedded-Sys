@@ -23,6 +23,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     output wire init_master_txn,
     input wire read_active,
     input wire TXN_DONE,
+    output wire aes_reset,
 
     input wire [63:0] debug_master,
 

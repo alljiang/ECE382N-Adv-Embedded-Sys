@@ -128,6 +128,7 @@
         .init_master_txn(init_master_txn),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
+        .aes_reset(aes_reset),
 
         .output_fifo_read_en(output_fifo_read_en),
         .output_fifo_read_data(output_fifo_read_data),
@@ -184,6 +185,7 @@
         .read_addr_index(read_addr_index[31:0]),
         .read_active(read_active),
         .TXN_DONE(TXN_DONE),
+        .aes_reset(aes_reset),
 
         .output_fifo_read_en(output_fifo_read_en),
         .output_fifo_read_data(output_fifo_read_data),
