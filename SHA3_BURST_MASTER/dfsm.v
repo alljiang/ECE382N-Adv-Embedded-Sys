@@ -187,11 +187,11 @@ module dfsm (
     end
 
     reg [31:0] blocks_to_process;
-    reg [28:0] delay_pipe;
+    reg [29:0] delay_pipe;
 
     // series of flip-flops for counting delays
     genvar i;
-    for (i = 1; i < 29; i = i + 1) begin
+    for (i = 1; i < 30; i = i + 1) begin
         always @(posedge clk) begin
             if (reset) begin
                 delay_pipe[i] <= 0;

@@ -91,7 +91,7 @@ initial begin
     ocm_data_out = 128'b0;
     aes_key_size = 2'b00;
     aes_key = 256'b0;
-    ctr_iv = 128'd10;
+    ctr_iv = 128'd1;
 
     bus_data_valid = 0;
     read_done = 0;
@@ -108,9 +108,9 @@ initial begin
     number_blocks = 2;
     #1;
 
-    `send_ocm_data("aaaaaaaaaaaaaaaa");
-    `send_ocm_data("aaaaaaaaaaaaaaaa");
-    `send_ocm_data("aaaaaaaaaaaaaaaa");
+    `send_ocm_data("␀␀␀␀␀␀␀␀");
+    `send_ocm_data("␀␀␀␀␀␀␀␀");
+    `send_ocm_data("␀␀␀␀␀␀␀␀");
 
     #50;
 
