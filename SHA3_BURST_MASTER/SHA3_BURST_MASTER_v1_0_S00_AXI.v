@@ -23,7 +23,7 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     output wire init_master_txn,
     input wire read_active,
     input wire TXN_DONE,
-    output wire aes_reset,
+    output wire aes_reset_out,
 
     input wire [63:0] debug_master,
 
@@ -780,6 +780,8 @@ module SHA3_BURST_MASTER_v1_0_S00_AXI #
     assign           aes_reset    = slv_reg0[0];
     assign           AES_START    = slv_reg0[1];
     assign           aes_key_size = slv_reg0[5:4];
+
+    assign aes_reset_out = aes_reset;
 
     wire [31:0] number_blocks = slv_reg2[15:0];
 
