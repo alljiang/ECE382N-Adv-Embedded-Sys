@@ -46,9 +46,9 @@ reg output_fifo_read_en;
 wire [127:0] output_fifo_read_data;
 wire output_fifo_empty;
 
-reg [15:0] number_blocks;
+reg [31:0] number_blocks;
 
-wire [511:0] debug;
+wire [191:0] debug;
 wire out_ready;
 
 dfsm my_dfsm (
@@ -105,12 +105,12 @@ initial begin
     #5;
    
     start = 1;
-    number_blocks = 3;
+    number_blocks = 2;
     #1;
 
-    `send_ocm_data("a");
-    `send_ocm_data("b");
-    `send_ocm_data("c");
+    `send_ocm_data("aaaaaaaaaaaaaaaa");
+    `send_ocm_data("aaaaaaaaaaaaaaaa");
+    `send_ocm_data("aaaaaaaaaaaaaaaa");
 
     #50;
 

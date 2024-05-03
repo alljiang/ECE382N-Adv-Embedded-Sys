@@ -824,7 +824,7 @@
 
     // fifo writeback logic
     always @(posedge M_AXI_ACLK) begin
-        if (M_AXI_ARESETN == 0 || init_txn_pulse == 1'b1) begin
+        if (M_AXI_ARESETN == 0) begin
             output_fifo_read_en <= 1'b0;
             start_single_burst_write <= 1'b0;
             my_count <= 0;
